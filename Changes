@@ -1,5 +1,8 @@
 Revision history for XML-MyXML
 
+0.0988  2013-03-21
+        Switched from using filehandle globs (like FILE) to ordinary scalars (like $fh)
+
 0.0987  2013-03-11
         Switched to Dist::Zilla
 
