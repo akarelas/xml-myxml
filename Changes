@@ -1,5 +1,9 @@
 Revision history for XML-MyXML
 
+0.0989  2013-03-23
+        Wrote basic tests
+        Use the 3-param syntax for 'open' (for read & write)
+
 0.0988  2013-03-21
         Switched from using filehandle globs (like FILE) to ordinary scalars (like $fh)
 
@@ -151,10 +155,10 @@ Revision history for XML-MyXML
 0.05    Nov 26th, 2006
         Added $obj->simplify method
 
-0.04	Nov 25th, 2006
+0.04    Nov 25th, 2006
         Added xml_to_simple function
 
-0.03	May 12th, 2006
+0.03    May 12th, 2006
         Applied some encoding/decoding commands in several functions
 
 0.01    May 3rd, 2006
