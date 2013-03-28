@@ -41,7 +41,7 @@ XML documents to be parsed may not contain the C<< > >> character unencoded in a
 
 =head1 OPTIONAL FUNCTION FLAGS
 
-Some functions and methods in this module accept optional flags, listed under each function in the documentation. They are optional, default to zero unless stated otherwise, and can be used as follows: S<C<< &function_name( $param1, { flag1 => 1, flag2 => 1 } ) >>>. This is what each flag does:
+Some functions and methods in this module accept optional flags, listed under each function in the documentation. They are optional, default to zero unless stated otherwise, and can be used as follows: S<C<< function_name( $param1, { flag1 => 1, flag2 => 1 } ) >>>. This is what each flag does:
 
 C<strip> : the function will strip initial and ending whitespace from all text values returned
 
@@ -137,9 +137,9 @@ sub tidy_xml {
 	if ($xml eq 'XML::MyXML') { confess "Error: 'tidy_xml' is a function, not a method"; }
 	my $flags = shift || {};
 
-	my $object = &xml_to_object($xml, $flags);
+	my $object = xml_to_object($xml, $flags);
 	defined $object or return $object;
-	&_tidy_object($object, undef, $flags);
+	_tidy_object($object, undef, $flags);
 	my $return = $object->to_xml({ %$flags, tidy => 0 }) . "\n";
 	$object->delete();
 	return $return;
@@ -161,7 +161,7 @@ sub xml_to_object {
 	my $soft = $flags->{'soft'}; # soft = 'don't die if can't parse, just return undef'
 
 	if ($flags->{'file'}) {
-		open my $fh, '<', $xml or do { confess "Error: The file '$xml' could not be opened for reading." unless $soft; return undef; };
+		open my $fh, '<', $xml or do { confess "Error: The file '$xml' could not be opened for reading: $!" unless $soft; return undef; };
 		$xml = join '', <$fh>;
 		close $fh;
 	}
@@ -181,7 +181,7 @@ sub xml_to_object {
 	my $entities = {};
 
 	# Parse CDATA sections
-	$xml =~ s/<\!\[CDATA\[(.*?)\]\]>/&_encode($1)/egs;
+	$xml =~ s/<\!\[CDATA\[(.*?)\]\]>/_encode($1)/egs;
 	my @els = $xml =~ /(<!--.*?(?:-->|$)|<[^>]*?>|[^<>]+)/sg;
 	# Remove comments, special markup and initial whitespace
 	{
@@ -194,7 +194,7 @@ sub xml_to_object {
 				if ($el !~ /\?>$/) { confess "Error: Erroneous special markup - '$el'" unless $soft; return undef; }
 				undef $el;
 			} elsif (my ($entname, undef, $entvalue) = $el =~ /^<!ENTITY\s+(\S+)\s+(['"])(.*?)\2\s*>$/g) {
-				$entities->{"&$entname;"} = &_decode($entvalue);
+				$entities->{"&$entname;"} = _decode($entvalue);
 				undef $el;
 			} elsif ($el =~ /<!/) { # like <!DOCTYPE> or <!ELEMENT> or <!ATTLIST>
 				undef $el;
@@ -237,7 +237,7 @@ sub xml_to_object {
 			foreach my $attr (@attrs) {
 				my ($name, undef, $value) = $attr =~ /^(\S+?)=(['"])(.*?)\2$/g;
 				if (! length($name) or ! defined($value)) { confess "Error: Strange attribute: '$attr'" unless $soft; $object->delete(); return undef; }
-				$attr{$name} = &_decode($value, $entities);
+				$attr{$name} = _decode($value, $entities);
 			}
 			my $entry = { element => $element, attrs => \%attr, parent => $pointer };
 			bless $entry, 'XML::MyXML::Object';
@@ -255,7 +255,7 @@ sub xml_to_object {
 			foreach my $attr (@attrs) {
 				my ($name, undef, $value) = $attr =~ /^(\S+?)=(['"])(.*?)\2$/g;
 				if (! length($name) or ! defined($value)) { confess "Error: Strange attribute: '$attr'" unless $soft; $object->delete(); return undef; }
-				$attr{$name} = &_decode($value, $entities);
+				$attr{$name} = _decode($value, $entities);
 			}
 			my $entry = { element => $element, attrs => \%attr, content => [], parent => $pointer };
 			bless $entry, 'XML::MyXML::Object';
@@ -263,7 +263,7 @@ sub xml_to_object {
 			push @{$pointer->{'content'}}, $entry;
 			$pointer = $entry;
 		} elsif ($el =~ /^[^<>]*$/) {
-			my $entry = { value => &_decode($el, $entities), parent => $pointer };
+			my $entry = { value => _decode($el, $entities), parent => $pointer };
 			bless $entry, 'XML::MyXML::Object';
 			push @{$pointer->{'content'}}, $entry;
 		} else {
@@ -282,17 +282,17 @@ sub _objectarray_to_xml {
 	my $xml = '';
 	foreach my $stuff (@$object) {
 		if (! defined $stuff->{'element'} and defined $stuff->{'value'}) {
-			$xml .= &_encode($stuff->{'value'});
+			$xml .= _encode($stuff->{'value'});
 		} else {
 			$xml .= "<".$stuff->{'element'};
 			foreach my $attrname (keys %{$stuff->{'attrs'}}) {
-				$xml .= " ".$attrname.'="'.&_encode($stuff->{'attrs'}{$attrname}).'"';
+				$xml .= " ".$attrname.'="'._encode($stuff->{'attrs'}{$attrname}).'"';
 			}
 			if (! defined $stuff->{'content'}) {
 				$xml .= "/>"
 			} else {
 				$xml .= ">";
-				$xml .= &_objectarray_to_xml($stuff->{'content'});
+				$xml .= _objectarray_to_xml($stuff->{'content'});
 				$xml .= "</".$stuff->{'element'}.">";
 			}
 		}
@@ -347,7 +347,7 @@ sub _tidy_object {
 	push @{$object->{'content'}}, bless ({ value => "\n".($flags->{'indentstring'}x($tabs)), parent => $object }, 'XML::MyXML::Object');
 
 	for my $i (0..$#{$object->{'content'}}) {
-		&_tidy_object($object->{'content'}[$i], $tabs+1, $flags);
+		_tidy_object($object->{'content'}[$i], $tabs+1, $flags);
 	}
 }
 
@@ -381,15 +381,15 @@ sub simple_to_xml {
 	} else {
 		$xml .= "<$key>"._arrayref_to_xml($value, $flags)."</$tag>";
 	}
-	if ($flags->{'tidy'}) { $xml = &tidy_xml($xml, { $flags->{'indentstring'} ? (indentstring => $flags->{'indentstring'}) : () }); }
+	if ($flags->{'tidy'}) { $xml = tidy_xml($xml, { $flags->{'indentstring'} ? (indentstring => $flags->{'indentstring'}) : () }); }
 	my $decl = $flags->{'complete'} ? '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'."\n" : '';
 	$decl .= "<?xml-stylesheet type=\"text/xsl\" href=\"$flags->{'xslt'}\"?>\n" if $flags->{'xslt'};
 	$xml = $decl . $xml;
 	if ($flags->{'utf8'}) { Encode::_utf8_on($xml); }
 
 	if (defined $flags->{'save'}) {
-		open my $fh, '>', $flags->{'save'} or confess "Error: Couldn't open file '$flags->{'save'}' for writing";
-		if ($flags->{'utf8'}) { binmode $fh, ':utf8'; }
+		open my $fh, '>', $flags->{'save'} or confess "Error: Couldn't open file '$flags->{'save'}' for writing: $!";
+		if ($flags->{'utf8'}) { binmode $fh, ':encoding(UTF-8)'; }
 		print $fh $xml;
 		close $fh;
 	}
@@ -418,7 +418,7 @@ sub _arrayref_to_xml {
 
 		if ($key eq '!as_is') {
 			Encode::_utf8_off($value);
-			$xml .= $value if &check_xml($value);
+			$xml .= $value if check_xml($value);
 		} elsif (! ref $value) {
 			Encode::_utf8_off($value);
 			$xml .= "<$key>"._encode($value)."</$tag>";
@@ -443,7 +443,7 @@ sub _hashref_to_xml {
 
 		if ($key eq '!as_is') {
 			Encode::_utf8_off($value);
-			$xml .= $value if &check_xml($value);
+			$xml .= $value if check_xml($value);
 		} elsif (! ref $value) {
 			Encode::_utf8_off($value);
 			$xml .= "<$key>"._encode($value)."</$tag>";
@@ -468,7 +468,7 @@ sub xml_to_simple {
 	my $xml = shift;
 	my $flags = shift || {};
 
-	my $object = &xml_to_object($xml, $flags);
+	my $object = xml_to_object($xml, $flags);
 
 	my $return = defined $object ? $object->simplify($flags) : $object;
 
@@ -484,9 +484,9 @@ sub _objectarray_to_simple {
 	if (! defined $object) { return undef; }
 
 	if ($flags->{'arrayref'}) {
-		return &_objectarray_to_simple_arrayref($object, $flags);
+		return _objectarray_to_simple_arrayref($object, $flags);
 	} else {
-		return &_objectarray_to_simple_hashref($object, $flags);
+		return _objectarray_to_simple_hashref($object, $flags);
 	}
 }
 
@@ -501,12 +501,12 @@ sub _objectarray_to_simple_hashref {
 	foreach my $stuff (@$object) {
 		if (defined $stuff->{'element'}) {
 			my $key = $stuff->{'element'};
-			if ($flags->{'strip_ns'}) { $key = &XML::MyXML::_strip_ns($key); }
+			if ($flags->{'strip_ns'}) { $key = XML::MyXML::_strip_ns($key); }
 			Encode::_utf8_on($key) if $flags->{'utf8'};
-			$hashref->{ $key } = &_objectarray_to_simple($stuff->{'content'}, $flags);
+			$hashref->{ $key } = _objectarray_to_simple($stuff->{'content'}, $flags);
 		} elsif (defined $stuff->{'value'}) {
 			my $value = $stuff->{'value'};
-			if ($flags->{'strip'}) { $value = &XML::MyXML::_strip($value); }
+			if ($flags->{'strip'}) { $value = XML::MyXML::_strip($value); }
 			Encode::_utf8_on($value) if $flags->{'utf8'};
 			return $value if $value =~ /\S/;
 		}
@@ -532,13 +532,13 @@ sub _objectarray_to_simple_arrayref {
 	foreach my $stuff (@$object) {
 		if (defined $stuff->{'element'}) {
 			my $key = $stuff->{'element'};
-			if ($flags->{'strip_ns'}) { $key = &XML::MyXML::_strip_ns($key); }
+			if ($flags->{'strip_ns'}) { $key = XML::MyXML::_strip_ns($key); }
 			Encode::_utf8_on($key) if $flags->{'utf8'};
-			push @$arrayref, ( $key, &_objectarray_to_simple($stuff->{'content'}, $flags) );
-			#$hashref->{ $key } = &_objectarray_to_simple($stuff->{'content'}, $flags);
+			push @$arrayref, ( $key, _objectarray_to_simple($stuff->{'content'}, $flags) );
+			#$hashref->{ $key } = _objectarray_to_simple($stuff->{'content'}, $flags);
 		} elsif (defined $stuff->{'value'}) {
 			my $value = $stuff->{'value'};
-			if ($flags->{'strip'}) { $value = &XML::MyXML::_strip($value); }
+			if ($flags->{'strip'}) { $value = XML::MyXML::_strip($value); }
 			Encode::_utf8_on($value) if $flags->{'utf8'};
 			return $value if $value =~ /\S/;
 		}
@@ -566,7 +566,7 @@ sub check_xml {
 
 	if (ref $flags ne 'HASH') { confess "Error: This method of setting flags is deprecated in XML::MyXML v0.083 - check module's documentation for the new way"; }
 
-	my $obj = &xml_to_object($xml, { %$flags, soft => 1 });
+	my $obj = xml_to_object($xml, { %$flags, soft => 1 });
 	if ($obj) {
 		$obj->delete();
 		return 1;
@@ -647,7 +647,7 @@ sub value {
 
 	if ($self->{'content'} and $self->{'content'}[0]) {
 		my $value = $self->{'content'}[0]{'value'};
-		if ($flags->{'strip'}) { $value = &XML::MyXML::_strip($value); }
+		if ($flags->{'strip'}) { $value = XML::MyXML::_strip($value); }
 		Encode::_utf8_on($value) if $flags->{'utf8'};
 		return $value;
 	} else {
@@ -708,7 +708,7 @@ sub tag {
 
 =head2 $obj->simplify
 
-Returns a very simple hashref, like the one returned with &XML::MyXML::xml_to_simple. Same restrictions and warnings apply.
+Returns a very simple hashref, like the one returned with C<&XML::MyXML::xml_to_simple>. Same restrictions and warnings apply.
 
 Optional flags: C<internal>, C<strip>, C<strip_ns>, C<arrayref>, C<utf8>
 
@@ -720,7 +720,7 @@ sub simplify {
 
 	if (ref $flags ne 'HASH') { confess "Error: This method of setting flags is deprecated in XML::MyXML v0.083 - check module's documentation for the new way"; }
 
-	my $simple = &XML::MyXML::_objectarray_to_simple([$self], $flags);
+	my $simple = XML::MyXML::_objectarray_to_simple([$self], $flags);
 	if (! $flags->{'internal'}) {
 		return $simple;
 	} else {
@@ -734,7 +734,7 @@ sub simplify {
 
 =head2 $obj->to_xml
 
-Returns the XML string of the object, just like calling C<&object_to_xml( $obj )>
+Returns the XML string of the object, just like calling C<object_to_xml( $obj )>
 
 Optional flags: C<complete>, C<tidy>, C<indentstring>, C<save>, C<utf8>
 
@@ -745,13 +745,13 @@ sub to_xml {
 	my $flags = shift || {};
 
 	my $decl = $flags->{'complete'} ? '<?xml version="1.1" encoding="UTF-8" standalone="yes" ?>'."\n" : '';
-	my $xml = &XML::MyXML::_objectarray_to_xml([$self]);
-	if ($flags->{'tidy'}) { $xml = &XML::MyXML::tidy_xml($xml, { %$flags, complete => 0, save => undef }); }
+	my $xml = XML::MyXML::_objectarray_to_xml([$self]);
+	if ($flags->{'tidy'}) { $xml = XML::MyXML::tidy_xml($xml, { %$flags, complete => 0, save => undef }); }
 	$xml = $decl . $xml;
 	if ($flags->{'utf8'}) { Encode::_utf8_on($xml); }
 	if (defined $flags->{'save'}) {
-		open my $fh, '>', $flags->{'save'} or confess "Error: Couldn't open file '$flags->{'save'}' for writing";
-		if ($flags->{'utf8'}) { binmode $fh, ':utf8'; }
+		open my $fh, '>', $flags->{'save'} or confess "Error: Couldn't open file '$flags->{'save'}' for writing: $!";
+		if ($flags->{'utf8'}) { binmode $fh, ':encoding(UTF-8)'; }
 		print $fh $xml;
 		close $fh;
 	}
@@ -760,7 +760,7 @@ sub to_xml {
 
 =head2 $obj->to_tidy_xml
 
-Returns the XML string of the object in tidy form, just like calling C<&tidy_xml( &object_to_xml( $obj ) )>
+Returns the XML string of the object in tidy form, just like calling C<tidy_xml( object_to_xml( $obj ) )>
 
 Optional flags: C<complete>, C<indentstring>, C<save>, C<utf8>
 

@@ -1,5 +1,11 @@
 Revision history for XML-MyXML
 
+0.0990  2013-03-28
+        Use ':encoding(UTF-8)' instead of ':utf8' with binmode
+        Include $! in error messages when open fails
+        Remove the '&' symbol from function calls
+        Include all of the dependencies (including Perl version) in the META files
+
 0.0989  2013-03-23
         Wrote basic tests
         Use the 3-param syntax for 'open' (for read & write)
