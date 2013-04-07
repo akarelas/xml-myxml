@@ -1,5 +1,8 @@
 Revision history for XML-MyXML
 
+0.0991  2013-04-07
+        Test some file reading/writing functions of the module as well
+
 0.0990  2013-03-28
         Use ':encoding(UTF-8)' instead of ':utf8' with binmode
         Include $! in error messages when open fails

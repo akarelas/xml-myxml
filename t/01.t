@@ -6,6 +6,8 @@ use warnings;
 use Test::More;
 use Test::Deep;
 
+use File::Temp qw/ tempfile /;
+
 use XML::MyXML qw(:all);
 
 my $xml = "<item><name>Table</name><price><usd>10.00</usd><eur>8.50</eur></price></item>";
@@ -36,5 +38,28 @@ $simple = {
 
 my $xml2 = simple_to_xml($simple);
 is($xml2, $xml, 'simple_to_xml ok');
+
+$obj->delete;
+($obj, $xml2) = ();
+
+is($xml, "<item><name>Table</name><price><usd>10.00</usd><eur>8.50</eur></price></item>", '$xml is unchanged');
+
+my ($thatfh1, $filename1) = tempfile('myxml-XXXXXXXX', TMPDIR => 1, UNLINK => 1);
+my ($thatfh2, $filename2) = tempfile('myxml-XXXXXXXX', TMPDIR => 1, UNLINK => 1);
+close $thatfh1;
+close $thatfh2;
+
+simple_to_xml($simple, { save => $filename1 });
+my $test_smp = xml_to_simple($filename1, { file => 1 });
+cmp_deeply($test_smp, {
+	item => {
+		name => 'Table',
+		price => {
+			usd => '10.00',
+			eur => '8.50',
+		},
+	},
+}, 'simple_to_xml (save) and xml_to_simple (file) ok');
+
 
 done_testing();
