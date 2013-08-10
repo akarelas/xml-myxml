@@ -7,7 +7,7 @@ use utf8;
 use Carp;
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(tidy_xml object_to_xml xml_to_object simple_to_xml xml_to_simple check_xml);
+our @EXPORT_OK = qw(tidy_xml object_to_xml xml_to_object simple_to_xml xml_to_simple check_xml ent_encode);
 our %EXPORT_TAGS = (all => [@EXPORT_OK]);
 use Encode;
 
@@ -85,6 +85,18 @@ sub _encode {
 	my $keys = "(".join("|", sort {length($b) <=> length($a)} keys %replace).")";
 	$string =~ s/$keys/$replace{$1}/g;
 	return $string;
+}
+
+=head2 ent_encode($string)
+
+Returns the same string, but with the C<< < >>, C<< > >>, C<< & >>, C<< " >> and C<< ' >> characters replaced by their XML entities (e.g. C<< &amp; >>).
+
+=cut
+
+sub ent_encode {
+	my ($string) = @_;
+
+	return _encode($string);
 }
 
 sub _decode {
@@ -377,7 +389,11 @@ sub simple_to_xml {
 
 	if (! ref $value) {
 		Encode::_utf8_off($value);
-		$xml .= "<$key>"._encode($value)."</$tag>";
+		if (defined $value and length $value) {
+			$xml .= "<$key>"._encode($value)."</$tag>";
+		} else {
+			$xml .= "<$key/>";
+		}
 	} else {
 		$xml .= "<$key>"._arrayref_to_xml($value, $flags)."</$tag>";
 	}
@@ -421,7 +437,11 @@ sub _arrayref_to_xml {
 			$xml .= $value if check_xml($value);
 		} elsif (! ref $value) {
 			Encode::_utf8_off($value);
-			$xml .= "<$key>"._encode($value)."</$tag>";
+			if (defined $value and length $value) {
+				$xml .= "<$key>"._encode($value)."</$tag>";
+			} else {
+				$xml .= "<$key/>";
+			}
 		} else {
 			$xml .= "<$key>"._arrayref_to_xml($value, $flags)."</$tag>";
 		}
@@ -446,7 +466,11 @@ sub _hashref_to_xml {
 			$xml .= $value if check_xml($value);
 		} elsif (! ref $value) {
 			Encode::_utf8_off($value);
-			$xml .= "<$key>"._encode($value)."</$tag>";
+			if (defined $value and length $value) {
+				$xml .= "<$key>"._encode($value)."</$tag>";
+			} else {
+				$xml .= "<$key/>";
+			}
 		} else {
 			$xml .= "<$key>"._arrayref_to_xml($value, $flags)."</$tag>";
 		}
@@ -594,17 +618,51 @@ sub new {
 	return $obj;
 }
 
+sub _parse_description {
+	my ($desc) = @_;
+
+	my ($tag, $attrs_str) = $desc =~ /^([^\[]*)(.*)$/g;
+	my %attrs = $attrs_str =~ /\[([^=\]]+)(?:=([^\]]*))?\]/g;
+
+	return ($tag, \%attrs);
+}
+
+sub cmp_element {
+	my ($self, $desc) = @_;
+
+	my ($tag, $attrs) = ref $desc
+			? @$desc{qw/ tag attrs /}
+			: _parse_description($desc);
+
+	! length $tag or $self->{'element'} =~ /(^|\:)\Q$tag\E$/	or return 0;
+	foreach my $attr (keys %$attrs) {
+		my $val = $self->attr($attr);
+		defined $val											or return 0;
+		! defined $attrs->{$attr} or $attrs->{$attr} eq $val	or return 0;
+	}
+
+	return 1;
+}
+
 sub children {
 	my $self = shift;
 	my $tag = shift;
 
 	$tag = '' if ! defined $tag;
 
-	if (length $tag) {
-		return grep {defined $_->{'element'} and $_->{'element'} =~ /(^|\:)\Q$tag\E$/} @{$self->{'content'}};
-	} else {
-		return grep { defined $_->{'element'} } @{$self->{'content'}};
+	my @all_children = grep { defined $_->{'element'} } @{$self->{'content'}};
+	length $tag		or return @all_children;
+
+	($tag, my $attrs) = _parse_description($tag);
+	my $desc = { tag => $tag, attrs => $attrs };
+
+	my @results;
+	CHILD: foreach my $child (@all_children) {
+		$child->cmp_element($desc)		or next;
+		push @results, $child;
 	}
+
+	return @results;
 }
 
 sub parent {
@@ -613,9 +671,9 @@ sub parent {
 	return $self->{'parent'};
 }
 
-=head2 $obj->path("subtag1/subsubtag2/.../subsubsubtagX")
+=head2 $obj->path("subtag1/subsubtag2[attr1=val1][attr2]/.../subsubsubtagX")
 
-Returns the element specified by the path as an XML::MyXML::Object object. When there are more than one tags with the specified name in the last step of the path, it will return all of them as an array. In scalar context will only return the first one.
+Returns the element specified by the path as an XML::MyXML::Object object. When there are more than one tags with the specified name in the last step of the path, it will return all of them as an array. In scalar context will only return the first one. CSS3-style attribute selectors are allowed in the path next to the tagnames, for example: C<< p[class=big] >> will only return C<< <p> >> elements that contain an attribute called "class" with a value of "big". p[class] on the other hand will return p elements having a "class" attribute, but that attribute can have any value.
 
 =cut
 
@@ -623,7 +681,19 @@ sub path {
 	my $self = shift;
 	my $path = shift;
 
-	my @path = split /\//, $path;
+	my @path;
+	my $orig_path = $path;
+	$path = "/" . $path;
+	while (length $path) {
+		my $success = $path =~ s!^/((?:[^/\[]*)?(?:\[[^\]]+\])*)!!;
+		my $seg = $1;
+		if ($success) {
+			push @path, $seg;
+		} else {
+			die "Invalid path: $orig_path";
+		}
+	}
+
 	my $el = $self;
 	for (my $i = 0; $i < $#path; $i++) {
 		my $pathstep = $path[$i];
@@ -655,9 +725,9 @@ sub value {
 	}
 }
 
-=head2 $obj->attr('attrname')
+=head2 $obj->attr('attrname' [, 'attrvalue'])
 
-Returns the value of the 'attrname' attribute of the top element. Returns undef if attribute does not exist. If called without the 'attrname' paramter, returns a hash with all attribute => value pairs.
+Gets/Sets the value of the 'attrname' attribute of the top element. Returns undef if attribute does not exist. If called without the 'attrname' paramter, returns a hash with all attribute => value pairs. If setting with an attrvalue of C<undef>, then removes that attribute entirely.
 
 Optional flags: C<utf8>
 
@@ -666,12 +736,35 @@ Optional flags: C<utf8>
 sub attr {
 	my $self = shift;
 	my $attrname = shift;
-	my $flags = shift || {};
+	my ($set_to, $must_set, $flags);
+	if (@_) {
+		my $next = shift;
+		if (! ref $next) {
+			$set_to = $next;
+			Encode::_utf8_off($set_to);
+			$must_set = 1;
+			$flags = shift;
+		} else {
+			$flags = $next;
+		}
+	}
+	$flags ||= {};
 
 	if (defined $attrname) {
-		my $attrvalue = $self->{'attrs'}->{$attrname};
-		Encode::_utf8_on($attrvalue) if $flags->{'utf8'};
-		return $attrvalue;
+		if ($must_set) {
+			if (defined ($set_to)) {
+				$self->{'attrs'}{$attrname} = $set_to;
+				Encode::_utf8_on($set_to) if $flags->{'utf8'};
+				return $set_to;
+			} else {
+				delete $self->{'attrs'}{$attrname};
+				return;
+			}
+		} else {
+			my $attrvalue = $self->{'attrs'}->{$attrname};
+			Encode::_utf8_on($attrvalue) if $flags->{'utf8'};
+			return $attrvalue;
+		}
 	} else {
 		my %attr = %{$self->{'attrs'}};
 		if ($flags->{'utf8'}) {
@@ -685,10 +778,10 @@ sub attr {
 
 =head2 $obj->tag
 
-Returns the tag of the $obj element (after stripping it from namespaces). E.g. if $obj represents an <rss:item> element, C<< $obj->tag >> will just return the name 'item'.
+Returns the tag of the $obj element (after stripping it from namespaces, unless the C<strip_ns> option is passed as false). E.g. if $obj represents an <rss:item> element, C<< $obj->tag >> will just return the name 'item'.
 Returns undef if $obj doesn't represent a tag.
 
-Optional flags: C<utf8>
+Optional flags: C<utf8>, C<strip_ns>
 
 =cut
 
@@ -698,7 +791,7 @@ sub tag {
 
 	my $tag = $self->{'element'};
 	if (defined $tag) {
-		$tag =~ s/^.*\://;
+		$tag =~ s/^.*\://	unless exists $flags->{'strip_ns'} and ! $flags->{'strip_ns'};
 		Encode::_utf8_on($tag) if $flags->{'utf8'};
 		return $tag;
 	} else {
