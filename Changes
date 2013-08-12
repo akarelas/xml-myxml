@@ -1,5 +1,8 @@
 Revision history for XML-MyXML
 
+0.09921 2013-08-12
+        Re-releasing because of a mistake I made in the release process previously
+
 0.0992  2013-08-12
         Prepared this module for KJabberd. More specifically:
         simple_to_xml now returns empty elements correctly (<el/>)
