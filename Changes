@@ -1,5 +1,13 @@
 Revision history for XML-MyXML
 
+0.0992  2013-08-12
+        Prepared this module for KJabberd. More specifically:
+        simple_to_xml now returns empty elements correctly (<el/>)
+        $obj->tag now optionally doesn't strip the namespace
+        paths may contain attrs, like in CSS3 selectors
+        added $el->cmp_element('tag[attr=val]') method (returns 1 or 0)
+        allow setting of attributes
+
 0.0991  2013-04-07
         Test some file reading/writing functions of the module as well
 
