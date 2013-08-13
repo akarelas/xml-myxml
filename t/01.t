@@ -89,5 +89,9 @@ is($obj->to_xml, '<people><person name="peter"><spouse>Maria</spouse></person></
 $obj->path('person')->attr('name', undef);
 is($obj->to_xml, '<people><person><spouse>Maria</spouse></person></people>', 'change ok 2');
 
+# XML_ESCAPE
+my $string = '<"al&ex\'>';
+is(xml_escape($string), '&lt;&quot;al&amp;ex&apos;&gt;', 'xml string escaped okay');
+
 
 done_testing();
