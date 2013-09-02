@@ -114,5 +114,9 @@ $xml = '<person><name>Γιώργος</name></person>';
 $obj = eval { xml_to_object($xml) };
 ok( $@, 'error occured because of wrong UTF-8' );
 
+# CHECK_XML
+ok( check_xml('<person/>'), 'check_xml ok 1' );
+ok( ! check_xml('<person>'), 'check_xml ok 2' );
+
 
 done_testing();

@@ -52,8 +52,6 @@ C<file> : the function will expect the path to a file containing an XML document
 
 C<complete> : the function's XML output will include an XML declaration (C<< <?xml ... ?>  >>) in the beginning
 
-C<soft> : the function will return undef instead of dying in case of an error during XML parsing
-
 C<internal> : the function will only return the contents of an element in a hashref instead of the element itself (see L</SYNOPSIS> for example)
 
 C<tidy> : the function will return tidy XML
@@ -138,7 +136,7 @@ sub _strip_ns {
 
 Returns the XML string in a tidy format (with tabs & newlines)
 
-Optional flags: C<file>, C<complete>, C<indentstring>, C<soft>, C<save>
+Optional flags: C<file>, C<complete>, C<indentstring>, C<save>
 
 =cut
 
@@ -160,7 +158,7 @@ sub tidy_xml {
 
 Creates an 'XML::MyXML::II::Object' object from the raw XML provided
 
-Optional flags: C<file>, C<soft>
+Optional flags: C<file>
 
 =cut
 
@@ -168,10 +166,8 @@ sub xml_to_object {
 	my $xml = shift;
 	my $flags = (@_ and defined $_[0]) ? $_[0] : {};
 
-	my $soft = $flags->{'soft'}; # soft = 'don't die if can't parse, just return undef'
-
 	if ($flags->{'file'}) {
-		open my $fh, '<', $xml or do { confess "Error: The file '$xml' could not be opened for reading: $!" unless $soft; return undef; };
+		open my $fh, '<', $xml	or confess "Error: The file '$xml' could not be opened for reading: $!";
 		$xml = join '', <$fh>;
 		close $fh;
 	}
@@ -182,7 +178,7 @@ sub xml_to_object {
 	eval {
 		$xml = decode($encoding, $xml, Encode::FB_CROAK);
 	};
-	! $@	or do { confess 'Error: Input string is invalid UTF-8' unless $soft; return undef; };
+	! $@	or confess 'Error: Input string is invalid UTF-8';
 
 	my $entities = {};
 
@@ -194,10 +190,10 @@ sub xml_to_object {
 		my $init_ws = 1;
 		foreach my $el (@els) {
 			if ($el =~ /^<!--/) {
-				if ($el !~ /-->$/) { confess encode_utf8("Error: unclosed XML comment block - '$el'") unless $soft; return undef; }
+				if ($el !~ /-->$/) { confess encode_utf8("Error: unclosed XML comment block - '$el'"); }
 				undef $el;
 			} elsif ($el =~ /^<\?/) { # like <?xml?> or <?target?>
-				if ($el !~ /\?>$/) { confess encode_utf8("Error: Erroneous special markup - '$el'") unless $soft; return undef; }
+				if ($el !~ /\?>$/) { confess encode_utf8("Error: Erroneous special markup - '$el'"); }
 				undef $el;
 			} elsif (my ($entname, undef, $entvalue) = $el =~ /^<!ENTITY\s+(\S+)\s+(['"])(.*?)\2\s*>$/g) {
 				$entities->{"&$entname;"} = _decode($entvalue);
@@ -213,18 +209,18 @@ sub xml_to_object {
 			}
 		}
 		@els = grep { defined $_ } @els;
-		if (! @els) { confess "Error: No elements in XML document" unless $soft; return undef; }
+		if (! @els) { confess "Error: No elements in XML document"; }
 	}
 	my @stack;
 	my $object = bless ({ content => [] }, 'XML::MyXML::II::Object');
 	my $pointer = $object;
 	foreach my $el (@els) {
 		if ($el =~ /^<\/?>$/) {
-			confess encode_utf8("Error: Strange element: '$el'") unless $soft; $object->delete(); return undef;
+			confess encode_utf8("Error: Strange element: '$el'");
 		} elsif ($el =~ /^<\/[^\s>]+>$/) {
 			my ($element) = $el =~ /^<\/(\S+)>$/g;
-			if (! length($element)) { confess encode_utf8("Error: Strange element: '$el'") unless $soft; $object->delete(); return undef; }
-			if ($stack[-1]{'element'} ne $element) { confess encode_utf8("Error: Incompatible stack element: stack='".$stack[-1]{'element'}."' element='$el'") unless $soft; $object->delete(); return undef; }
+			if (! length($element)) { confess encode_utf8("Error: Strange element: '$el'"); }
+			if ($stack[-1]{'element'} ne $element) { confess encode_utf8("Error: Incompatible stack element: stack='".$stack[-1]{'element'}."' element='$el'"); }
 			my $stackentry = pop @stack;
 			if ($#{$stackentry->{'content'}} == -1) {
 				delete $stackentry->{'content'};
@@ -232,7 +228,7 @@ sub xml_to_object {
 			$pointer = $stackentry->{'parent'};
 		} elsif ($el =~ /^<[^>]+\/>$/) {
 			my ($element) = $el =~ /^<([^\s>\/]+)/g;
-			if (! length($element)) { confess encode_utf8("Error: Strange element: '$el'") unless $soft; $object->delete(); return undef; }
+			if (! length($element)) { confess encode_utf8("Error: Strange element: '$el'"); }
 			my $elementmeta = quotemeta($element);
 			$el =~ s/^<$elementmeta//;
 			$el =~ s/\/>$//;
@@ -242,7 +238,7 @@ sub xml_to_object {
 			my %attr;
 			foreach my $attr (@attrs) {
 				my ($name, undef, $value) = $attr =~ /^(\S+?)=(['"])(.*?)\2$/g;
-				if (! length($name) or ! defined($value)) { confess encode_utf8("Error: Strange attribute: '$attr'") unless $soft; $object->delete(); return undef; }
+				if (! length($name) or ! defined($value)) { confess encode_utf8("Error: Strange attribute: '$attr'"); }
 				$attr{$name} = _decode($value, $entities);
 			}
 			my $entry = { element => $element, attrs => \%attr, parent => $pointer };
@@ -250,7 +246,7 @@ sub xml_to_object {
 			push @{$pointer->{'content'}}, $entry;
 		} elsif ($el =~ /^<[^\s>\/][^>]*>$/) {
 			my ($element) = $el =~ /^<([^\s>]+)/g;
-			if (! length($element)) { confess encode_utf8("Error: Strange element: '$el'") unless $soft; $object->delete(); return undef; }
+			if (! length($element)) { confess encode_utf8("Error: Strange element: '$el'"); }
 			my $elementmeta = quotemeta($element);
 			$el =~ s/^<$elementmeta//;
 			$el =~ s/>$//;
@@ -260,7 +256,7 @@ sub xml_to_object {
 			my %attr;
 			foreach my $attr (@attrs) {
 				my ($name, undef, $value) = $attr =~ /^(\S+?)=(['"])(.*?)\2$/g;
-				if (! length($name) or ! defined($value)) { confess encode_utf8("Error: Strange attribute: '$attr'") unless $soft; $object->delete(); return undef; }
+				if (! length($name) or ! defined($value)) { confess encode_utf8("Error: Strange attribute: '$attr'"); }
 				$attr{$name} = _decode($value, $entities);
 			}
 			my $entry = { element => $element, attrs => \%attr, content => [], parent => $pointer };
@@ -273,10 +269,10 @@ sub xml_to_object {
 			bless $entry, 'XML::MyXML::II::Object';
 			push @{$pointer->{'content'}}, $entry;
 		} else {
-			confess encode_utf8("Error: Strange element: '$el'") unless $soft; $object->delete(); return undef;
+			confess encode_utf8("Error: Strange element: '$el'");
 		}
 	}
-	if (@stack) { confess encode_utf8("Error: The <$stack[-1]{'element'}> element has not been closed in XML") unless $soft; $object->delete(); return undef; }
+	if (@stack) { confess encode_utf8("Error: The <$stack[-1]{'element'}> element has not been closed in XML"); }
 	$object = $object->{'content'}[0];
 	$object->{'parent'} = undef;
 	return $object;
@@ -473,7 +469,7 @@ Since the object created is a hashref, duplicate keys will be discarded. WARNING
 
 All strings contained in the output simple structure, will contain characters rather than octets/bytes.
 
-Optional flags: C<internal>, C<strip>, C<file>, C<soft>, C<strip_ns>, C<arrayref>
+Optional flags: C<internal>, C<strip>, C<file>, C<strip_ns>, C<arrayref>
 
 =cut
 
@@ -571,7 +567,7 @@ sub check_xml {
 	my $xml = shift;
 	my $flags = (@_ and defined $_[0]) ? $_[0] : {};
 
-	my $obj = xml_to_object($xml, { %$flags, soft => 1 });
+	my $obj = eval { xml_to_object($xml, $flags) };
 	if ($obj) {
 		$obj->delete();
 		return 1;
