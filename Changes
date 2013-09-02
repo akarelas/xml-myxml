@@ -1,5 +1,12 @@
 Revision history for XML-MyXML
 
+0.1000  2013-09-02
+        Created XML::MyXML::II to replace the deprecated XML::MyXML which won't be maintained anymore. Differences are the following:
+        Better unicode support (all strings except XML docs themselves, will contain characters instead of bytes/octets)
+        Removed the 'utf8' and 'soft' options from methods and functions that used them
+        Created objects that go out of scope are automatically destroyed (and also removed the $obj->delete method)
+        $obj->tag doesn't by default strip the namespace from the returned tagname
+
 0.0993  2013-08-13
         Quickly changed name of ent_encode function to the more correct 'xml_escape'
 
