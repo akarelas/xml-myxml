@@ -27,9 +27,9 @@ use Encode;
 
 =head1 PLEASE USE XML::MyXML::II INSTEAD
 
-B<< *** This module will not be maintained anymore *** Please use XML::MyXML::II instead, which is also contained in this distribution *** >>
+B<< *** This module will not be maintained anymore *** Please use L<XML::MyXML::II> instead, which is also contained in this distribution *** >>
 
-It's differences are: better unicode handling.
+It's main improvements are: better unicode handling and automatic object destruction
 
 =head1 EXPORT
 

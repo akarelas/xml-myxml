@@ -1,5 +1,8 @@
 Revision history for XML-MyXML
 
+0.1001  2013-09-02
+        Fixed documentation of XML::MyXML a bit
+
 0.1000  2013-09-02
         Created XML::MyXML::II to replace the deprecated XML::MyXML which won't be maintained anymore. Differences are the following:
         Better unicode support (all strings except XML docs themselves, will contain characters instead of bytes/octets)
