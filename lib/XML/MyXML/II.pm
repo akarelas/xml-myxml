@@ -4,6 +4,7 @@ package XML::MyXML::II;
 use strict;
 use warnings;
 use Carp;
+use Scalar::Util qw( weaken );
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(tidy_xml object_to_xml xml_to_object simple_to_xml xml_to_simple check_xml xml_escape);
@@ -28,9 +29,21 @@ use Encode;
 
 tidy_xml, xml_to_object, object_to_xml, simple_to_xml, xml_to_simple, check_xml
 
-=head1 REASON FOR EXISTENCE
+=head1 DIFFERENCES FROM XML::MyXML
 
-XML::MyXML::II is similar to XML::MyXML, but introduces some changes that break backwards compatibility with programs that use XML::MyXML.  XML::MyXML will not be maintained anymore. XML::MyXML::II is the module you should use (and will be maintained). Its differences from the older XML::MyXML are the following: better handling of unicode (see section "FEATURES & LIMITATIONS" on character strings vs. strings with bytes/octets), the removal of the C<utf8> flag from the functions & methods that used it, and other changes that will follow and will be listed here.
+XML::MyXML::II is similar to L<XML::MyXML>, but introduced some changes in v0.100 that broke backwards compatibility with programs that use XML::MyXML. For this reason, XML::MyXML has been kept in its place, but will not be maintained anymore. XML::MyXML::II is the module you should use (and will be maintained). Its differences from the older L<XML::MyXML> are the following:
+
+=over
+
+=item * Better handling of unicode: Only XML documents (both parameters and returned values) are in bytes/octets. All other strings contain characters rather than bytes/octets (see section L</"FEATURES & LIMITATIONS">). Removed the C<utf8> option from the functions & methods that used it.
+
+=item * Objects created by this module will now be automatically destroyed once out of scope (because I replaced cycles with weakened refs)
+
+=item * Removed the pretty useless C<soft> option from the functions and methods that used it. If you want XML::MyXML's soft behaviour, you will need to C<eval {}> from your own program.
+
+=item * C<< $obj->tag >> doesn't by default strip the namespace from the returned tagname
+
+=back
 
 =head1 FEATURES & LIMITATIONS
 
@@ -149,7 +162,6 @@ sub tidy_xml {
 	defined $object or return $object;
 	_tidy_object($object, undef, $flags);
 	my $return = $object->to_xml({ %$flags, tidy => 0 }) . "\n";
-	$object->delete();
 	return $return;
 }
 
@@ -242,6 +254,7 @@ sub xml_to_object {
 				$attr{$name} = _decode($value, $entities);
 			}
 			my $entry = { element => $element, attrs => \%attr, parent => $pointer };
+			weaken( $entry->{'parent'} );
 			bless $entry, 'XML::MyXML::II::Object';
 			push @{$pointer->{'content'}}, $entry;
 		} elsif ($el =~ /^<[^\s>\/][^>]*>$/) {
@@ -260,12 +273,14 @@ sub xml_to_object {
 				$attr{$name} = _decode($value, $entities);
 			}
 			my $entry = { element => $element, attrs => \%attr, content => [], parent => $pointer };
+			weaken( $entry->{'parent'} );
 			bless $entry, 'XML::MyXML::II::Object';
 			push @stack, $entry;
 			push @{$pointer->{'content'}}, $entry;
 			$pointer = $entry;
 		} elsif ($el =~ /^[^<>]*$/) {
 			my $entry = { value => _decode($el, $entities), parent => $pointer };
+			weaken( $entry->{'parent'} );
 			bless $entry, 'XML::MyXML::II::Object';
 			push @{$pointer->{'content'}}, $entry;
 		} else {
@@ -343,10 +358,14 @@ sub _tidy_object {
 	@children = @{$object->{'content'}};
 	$object->{'content'} = [];
 	for my $i (0..$#children) {
-		push @{$object->{'content'}}, bless ({ value => "\n".($flags->{'indentstring'}x($tabs+1)), parent => $object }, 'XML::MyXML::II::Object');
+		my $whitespace = bless ({ value => "\n".($flags->{'indentstring'}x($tabs+1)), parent => $object }, 'XML::MyXML::II::Object');
+		weaken( $whitespace->{'parent'} );
+		push @{$object->{'content'}}, $whitespace;
 		push @{$object->{'content'}}, $children[$i];
 	}
-	push @{$object->{'content'}}, bless ({ value => "\n".($flags->{'indentstring'}x($tabs)), parent => $object }, 'XML::MyXML::II::Object');
+	my $whitespace = bless ({ value => "\n".($flags->{'indentstring'}x($tabs)), parent => $object }, 'XML::MyXML::II::Object');
+	weaken( $whitespace->{'parent'} );
+	push @{$object->{'content'}}, $whitespace;
 
 	for my $i (0..$#{$object->{'content'}}) {
 		_tidy_object($object->{'content'}[$i], $tabs+1, $flags);
@@ -481,8 +500,6 @@ sub xml_to_simple {
 
 	my $return = defined $object ? $object->simplify($flags) : $object;
 
-	$object->delete();
-
 	return $return;
 }
 
@@ -557,7 +574,7 @@ sub _objectarray_to_simple_arrayref {
 
 =head2 check_xml($raw_xml)
 
-Returns 1 if the $raw_xml string is valid XML (valid enough to be used by this module), and 0 otherwise.
+Returns true if the $raw_xml string is valid XML (valid enough to be used by this module), and false otherwise.
 
 Optional flags: C<file>
 
@@ -568,12 +585,7 @@ sub check_xml {
 	my $flags = (@_ and defined $_[0]) ? $_[0] : {};
 
 	my $obj = eval { xml_to_object($xml, $flags) };
-	if ($obj) {
-		$obj->delete();
-		return 1;
-	} else {
-		return 0;
-	}
+	return ! $@;
 }
 
 
@@ -748,7 +760,7 @@ sub attr {
 
 =head2 $obj->tag
 
-Returns the tag of the $obj element (after stripping it from namespaces, unless the C<strip_ns> option is passed as false). E.g. if $obj represents an <rss:item> element, C<< $obj->tag >> will just return the name 'item'.
+Returns the tag of the $obj element. E.g. if $obj represents an <rss:item> element, C<< $obj->tag >> will return the string 'rss:item'.
 Returns undef if $obj doesn't represent a tag.
 
 Optional flags: C<strip_ns>
@@ -761,7 +773,7 @@ sub tag {
 
 	my $tag = $self->{'element'};
 	if (defined $tag) {
-		$tag =~ s/^.*\://	unless exists $flags->{'strip_ns'} and ! $flags->{'strip_ns'};
+		$tag =~ s/^.*\://	if $flags->{'strip_ns'};
 		return $tag;
 	} else {
 		return undef;
@@ -835,47 +847,10 @@ sub to_tidy_xml {
 
 
 
-=head2 $obj->delete
-
-Deletes the object and all its children from memory. This is the only way to remove an XML object from memory and clear the RAM, since children and parents refer to each other circularly.
-
-The way it works is by removing references from the object's descendants to their parents.
-
-=cut
-
-sub delete {
-	my $self = shift;
-
-	# Remove self from parent's "content" field
-	my $parent = $self->{'parent'};
-	if ($parent) {
-		my $content = $parent->{'content'};
-		if ($content) {
-			my @new = ();
-			foreach my $item (@$content) {
-				if ($item != $self) { push @new, $item; }
-			}
-			$parent->{'content'} = \@new;
-		}
-	}
-
-	my $content = $self->{'content'};
-	if ($content) {
-		foreach my $item (@$content) {
-			$item->delete();
-		}
-	}
-
-	delete $self->{$_} foreach keys %$self;
-}
-
 =head1 BUGS
 
-If you don't have a Github account to report your issues at
-L<https://github.com/akarelas/xml-myxml/issues>,
-then feel free to report any bugs or feature requests to
-C<bug-xml-myxml at rt.cpan.org>, or through the web interface at
-L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=XML-MyXML>.
+If you have a Github account, report your issues at
+L<https://github.com/akarelas/xml-myxml/issues>.
 I will be notified, and then you'll automatically be notified of progress on
 your bug as I make changes.
 

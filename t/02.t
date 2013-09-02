@@ -57,7 +57,6 @@ my $correct_tidy_xml = <<'EOB';
 EOB
 is($tidy_xml, encode_utf8($correct_tidy_xml), 'tidy with wide-characters works well');
 
-$obj->delete;
 ($obj, $xml2) = ();
 
 is($xml, encode_utf8("<item><name>Τραπέζι</name><price><usd>10.00</usd><eur>8.50</eur></price></item>"), '$xml is unchanged');
@@ -82,8 +81,9 @@ cmp_deeply($test_smp, {
 # TEST NO-STRIPNS TAG
 $xml = encode_utf8("<school:μαθητής>Peter</school:μαθητής>");
 $obj = xml_to_object($xml);
-is($obj->tag, 'μαθητής', 'tag stripped_ns ok');
-is($obj->tag({ strip_ns => 0 }), 'school:μαθητής', 'tag not stripped_ns ok');
+is($obj->tag, 'school:μαθητής', 'tag not stripped_ns ok 1');
+is($obj->tag({ strip_ns => 0 }), 'school:μαθητής', 'tag not stripped_ns ok 2');
+is($obj->tag({ strip_ns => 1 }), 'μαθητής', 'tag stripped_ns ok');
 
 # TEST QUICK-CLOSE
 $simple = { person => { name => undef } };
@@ -103,7 +103,6 @@ $obj->path('person')->attr('όνομα', 'πέτρος');
 is($obj->to_xml, encode_utf8('<people><person όνομα="πέτρος"><spouse>Maria</spouse></person></people>'), 'change ok 1');
 $obj->path('person')->attr('όνομα', undef);
 is($obj->to_xml, '<people><person><spouse>Maria</spouse></person></people>', 'change ok 2');
-$obj->delete;
 
 # XML_ESCAPE
 my $string = '<"άλ&εξ\'>';
@@ -117,6 +116,17 @@ ok( $@, 'error occured because of wrong UTF-8' );
 # CHECK_XML
 ok( check_xml('<person/>'), 'check_xml ok 1' );
 ok( ! check_xml('<person>'), 'check_xml ok 2' );
+
+# CHECK WEAKENED REFS
+note 'checking weakened refs';
+my ($ch1, $ch2);
+{
+	$xml = '<items><item>Table</item><item>Chair</item></items>';
+	$obj = xml_to_object($xml);
+	($ch1, $ch2) = $obj->path('item');
+}
+is($ch1->to_xml, '<item>Table</item>', 'item1 ok');
+is($ch2->to_xml, '<item>Chair</item>', 'item2 ok');
 
 
 done_testing();
