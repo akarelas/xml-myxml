@@ -1,5 +1,8 @@
 Revision history for XML-MyXML
 
+0.1002  2013-09-10
+        Made it compatible with Perl 5.8 again
+
 0.1001  2013-09-02
         Fixed documentation of XML::MyXML a bit
 

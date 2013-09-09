@@ -185,7 +185,7 @@ sub xml_to_object {
 	}
 
 	my (undef, undef, $encoding) = $xml =~ /<\?xml(\s[^>]+)?\sencoding=(['"])(.*?)\2/g;
-	$encoding //= 'UTF-8';
+	$encoding = 'UTF-8'		if ! defined $encoding;
 	if ($encoding =~ /^utf-?8$/i) { $encoding = 'UTF-8'; }
 	eval {
 		$xml = decode($encoding, $xml, Encode::FB_CROAK);
