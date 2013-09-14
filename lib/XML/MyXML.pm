@@ -185,6 +185,7 @@ sub xml_to_object {
 	}
 
 	my (undef, undef, $encoding) = $xml =~ /<\?xml(\s[^>]+)?\sencoding=(['"])(.*?)\2/g;
+	utf8::downgrade($xml);
 	Encode::_utf8_on($xml);
 	if (! utf8::valid($xml)) {
 		if ($encoding and $encoding !~ /^utf-?8$/i) {
@@ -923,4 +924,3 @@ your bug as I make changes.
 =cut
 
 1; # End of XML::MyXML
-
