@@ -11,6 +11,8 @@ our @EXPORT_OK = qw(tidy_xml object_to_xml xml_to_object simple_to_xml xml_to_si
 our %EXPORT_TAGS = (all => [@EXPORT_OK]);
 use Encode;
 
+warn "WARNING: Your program is using XML::MyXML, which is deprecated. Development on this module has stopped, and the module will be removed from future CPAN releases on January 1st, 2016. Please start using XML::MyXML::II as soon as possible instead, which you have installed on your system. Please also make sure you read https://metacpan.org/pod/XML::MyXML::II#DIFFERENCES-FROM-XML::MyXML to see the few differences between XML::MyXML and XML::MyXML::II";
+
 =head1 SYNOPSIS
 
     use XML::MyXML qw(tidy_xml xml_to_object);
