@@ -1,13 +1,17 @@
 Revision history for XML-MyXML
 
+0.9001  2014-03-04
+        Made Changes file compliant
+        Fixed bug where it wasn't possible to have two entities resolving to the same string
+
 0.9000  2014-03-04
         BREAKING CHANGES:
         XML::MyXML has changed to work like XML::MyXML::II. This means:
-        * Better unicode support (all strings except XML docs themselves, will contain characters instead of bytes/octets)
-        * Removed the 'utf8' and 'soft' options from methods and functions that used them
-        * Created objects that go out of scope are automatically destroyed (and also removed the $obj->delete method)
-        * $obj->tag doesn't by default strip the namespace from the returned tagname
-        * XML::MyXML::II doesn't exist anymore
+            Better unicode support (all strings except XML docs themselves, will contain characters instead of bytes/octets)
+            Removed the 'utf8' and 'soft' options from methods and functions that used them
+            Created objects that go out of scope are automatically destroyed (and also removed the $obj->delete method)
+            $obj->tag doesn't by default strip the namespace from the returned tagname
+            XML::MyXML::II doesn't exist anymore
         Also fixed the rare double-decoding bug (bug #1 on github)
         The interface looks stable, so preparing for v1.0 release
 
@@ -60,157 +64,156 @@ Revision history for XML-MyXML
 0.0987  2013-03-11
         Switched to Dist::Zilla
 
-0.0986  Oct 8th, 2007
+0.0986  2007-10-08
         Added the ->parent() method
 
-0.09851 Sep 7th, 2007
+0.09851 2007-09-07
         Deleted a duplicate sentence from the documentation
 
-0.0985  Sep 5th, 2007
+0.0985  2007-09-05
         If $obj->attr is called without parameters, will return a hash of all attribute => value pairs
 
-0.098061 Aug 10th, 2007
+0.098061 2007-08-10
         Minor modification in the documentation to describe change in version 0.09806
 
-0.09806 Aug 10th, 2007
+0.09806 2007-08-10
         XML documents to be parsed may be encoded either in UTF-8 or in some other encoding provided this encoding is declared in the XML declaration ( <?xml ... encoding="..." ?> ) in the beginning of the document
 
-0.09805 Jul 27th, 2007
+0.09805 2007-07-27
         Slight improvements to the $obj->delete method and to garbage-colection throughout the module
 
-0.098   Jul 26th, 2007
+0.098   2007-07-26
         Added the $obj->delete method that will clear the memory of an object (needed because an object and its children refer to each other circularly)
 
-0.09766 Apr 17th, 2007
+0.09766 2007-04-17
         All functions that parse XML strings will convert string to utf8 if a different encoding is declared in the XML declaration
 
-0.09765 Apr 17th, 2007
+0.09765 2007-04-17
         Fixed dependencies so tests don't fail
 
-0.09762 Apr 16th, 2007
+0.09762 2007-04-16
         Some functions now check whether the provided XML is valid utf-8, and produce an error if it's not (having 'soft' flag turned on will return undef in case of invalid utf-8)
 
-0.09761 Apr 16th, 2007
+0.09761 2007-04-16
         Removed some debugging code
 
-0.0976  Apr 16th, 2007
+0.0976  2007-04-16
         Fixed encoding issues completely. All strings output by this module are in bytes, unless the 'utf8' flag is used (see this module's documentation)
 
-0.0975  Apr 16th, 2007
+0.0975  2007-04-16
         Fixed encoding issue
 
-0.0974  Apr 16th, 2007
+0.0974  2007-04-16
         Fixed encoding issue
 
-0.0973  Apr 15th, 2007
+0.0973  2007-04-15
         Fixed a critical bug where calling the 'value' method on an empty element would change its contents
 
-0.0972  Apr 12th, 2007
+0.0972  2007-04-12
         Added myperl.eu mention in docs
 
-0.0971  Apr 1st, 2007
+0.0971  2007-04-01
         Fixed bug where simple arrayref structures would get 'consumed' by &simple_to_xml
 
-0.097   Mar 24th, 2007
+0.097   2007-03-24
         &simple_to_xml can add xslt declarations in the beginning
         &xml_to_simple and ->simplify can create arrayrefs in addition to hashrefs (arrayrefs preserve order and duplicate elements)
         Fixed bug where &xml_to_object would choke with some symbols in utf8::upgrade'd XML strings
 
-0.0969  Mar 17th, 2007
+0.0969  2007-03-17
         Fixed bug where simple_to_xml wouldn't accept attributes at the root element
         Fixed XML version in declaration from 1.1 to 1.0
 
-0.0968  Mar 9th, 2007
+0.0968  2007-03-09
         Added the 'strip_ns' flag, that strips namespaces from tags, on &xml_to_simple and on ->simplify
 
-0.0961  Mar 7th, 2007
+0.0961  2007-03-07
         Corrected bug where the indentstring flag on &simple_to_xml wouldn't do anything
 
-0.096   Mar 6th, 2007
+0.096   2007-03-06
         Added ability for the following functions/methods to save their XML output to a file: &tidy_xml, &object_to_xml, &simple_to_xml, ->to_xml, ->to_tidy_xml
         Added the 'soft' flag to &tidy_xml
 
-0.0951  Mar 6th, 2007
+0.0951  2007-03-06
         Corrected bug where ->value would double-decode
 
-0.095   Mar 6th, 2007
+0.095   2007-03-06
         Added support for parsing the simplest and non-recursive form of <!ENTITY> markup
         Added optional 'tidy' flag to &object_to_xml, &simple_to_xml and ->to_xml
         Corrected bug where hex numerical entities couldn't contain capital letters ('A'..'F')
 
-0.094   Mar 6th, 2007
+0.094   2007-03-06
         Added a space before the '?>' mark in the XML declaration introduced in 0.093
         Corrected small bits in documentation
 
-0.093   Mar 5th, 2007
+0.093   2007-03-05
         Parser will now ignore all special markup instead of dying on it (except for CDATA sections which it can handle since v0.061)
         XML documents produced with this module may now have an XML declaration in the beginning (<?xml ... ?>)
         Almost all functions and methods accept flags now
         Wrote features & limitations in the documentation
         Wrote a 'function flags' section in the documentation
 
-0.092   Mar 5th, 2007
+0.092   2007-03-05
         check_xml, which used to be able to check XML strings only, can now check XML files also
         Added an optional 'soft' mode to xml_to_simple and xml_to_object functions, which returns undef instead of dying in case of error
         Added the :all export tag - imports all exportable functions
 
-0.091   Mar 4th, 2007
+0.091   2007-03-04
         xml_to_simple and xml_to_object can now accept a filename for an argument
         Minor alterations in the documentation
 
-0.09    Mar 3rd, 2007
+0.09    2007-03-03
         simple_to_xml($simple_ref) has been changed to allow the argument to be a hashref, an arrayref or a mixed structure
 
-0.083   Mar 3rd, 2007
+0.083   2007-03-03
         Changed the way that flags are set. Instead of a string such as 'strip internal', it's with a hashref { strip => 1, internal => 1 }. Module stops execution and informs about the change, if programmer tries to set flags with the old way.
 
-0.082   Mar 3rd, 2007
+0.082   2007-03-03
         Added optional 'strip' mode for the &xml_to_simple function and the $obj->simplify method, that strips surrounding whitespace from texts
         Added optional 'internal' mode for the $obj->simplify method, that return a hashref only of the contents of the top element
 
-0.081   Mar 3rd, 2007
+0.081   2007-03-03
         Added an 'internal' mode for the &xml_to_simple function
         Added a 'strip' mode for the ->value method that strips surrounding whitespace
 
-0.08    Mar 1st, 2007
+0.08    2007-03-01
         XML-decodes the attribute values when parsing documents, and XML-encodes them when creating XML documents
         Added the ->tag method to XML objects, which retrieves the tag name of the top element
         Minor changes in the documentation
 
-0.076   Feb 27th, 2007
+0.076   2007-02-27
         $element->value returns empty string ('') if element is empty, instead of null
 
-0.075   Feb 25th, 2007
+0.075   2007-02-25
         Added the ->attr('attr_name') method to XML objects, which retrieves the value of an attribute
 
-0.07    Feb 25th, 2007
+0.07    2007-02-25
         Added a check_xml function that checks if the provided XML document is valid enough for use with this module
 
-0.066   Feb 25th, 2007
+0.066   2007-02-25
         Allows whitespace and comments to exist before the root element
 
-0.065   Feb 25th, 2007
+0.065   2007-02-25
         Handles attributes in tags better (attrs are allowed to contain spaces)
 
-0.0641  Feb 25th, 2007
+0.0641  2007-02-25
         Now handles XML comments when parsing XML documents
 
-0.061   Nov 27th, 2006
+0.061   2006-11-27
         Added parsing of CDATA sections
         Added $object->to_xml and $object->to_tidy_xml methods
 
-0.051   Nov 26th, 2006
+0.051   2006-11-26
         Understands numerical (dec and hex) entities in XML (eg &#x20ac; and &#161;)
 
-0.05    Nov 26th, 2006
+0.05    2006-11-26
         Added $obj->simplify method
 
-0.04    Nov 25th, 2006
+0.04    2006-11-25
         Added xml_to_simple function
 
-0.03    May 12th, 2006
+0.03    2006-05-12
         Applied some encoding/decoding commands in several functions
 
-0.01    May 3rd, 2006
+0.01    2006-05-03
         First version, released on an unsuspecting world.
-
