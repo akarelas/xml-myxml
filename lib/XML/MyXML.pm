@@ -108,10 +108,24 @@ sub _decode {
 					'\'' => '&apos;',
 					'"' => '&quot;',
 	);
-	$string =~ s/\&\#x([0-9a-f]+)\;/chr(hex($1))/egi;
-	$string =~ s/\&\#([0-9]+)\;/chr($1)/eg;
-	my $keys = "(".join("|", keys %replace).")";
-	$string =~ s/$keys/$replace{$1}/g;
+	my @capture = map "\Q$_\E", keys %replace;
+	push @capture, '&#x[0-9A-Fa-f]+;', '&#[0-9]+;';
+	my $capture = "(".join("|", @capture).")";
+	my @captured = $string =~ /$capture/g;
+	@captured	or return $string;
+	my %conv;
+	foreach my $e (@captured) {
+		if (exists $conv{$e}) { next; }
+		if (exists $replace{$e}) {
+			$conv{$e} = $replace{$e};
+		} elsif ($e =~ /^&#x([0-9a-fA-F]+);$/) {
+			$conv{$e} = chr(hex($1));
+		} elsif ($e =~ /^&#([0-9]+);$/) {
+			$conv{$e} = chr($1);
+		}
+	}
+	my $keys = "(".join("|", map "\Q$_\E", keys %conv).")";
+	$string =~ s/$keys/$conv{$1}/g;
 	return $string;
 }
 

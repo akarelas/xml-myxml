@@ -1,5 +1,16 @@
 Revision history for XML-MyXML
 
+0.9000  2014-03-04
+        BREAKING CHANGES:
+        XML::MyXML has changed to work like XML::MyXML::II. This means:
+        * Better unicode support (all strings except XML docs themselves, will contain characters instead of bytes/octets)
+        * Removed the 'utf8' and 'soft' options from methods and functions that used them
+        * Created objects that go out of scope are automatically destroyed (and also removed the $obj->delete method)
+        * $obj->tag doesn't by default strip the namespace from the returned tagname
+        * XML::MyXML::II doesn't exist anymore
+        Also fixed the rare double-decoding bug (bug #1 on github)
+        The interface looks stable, so preparing for v1.0 release
+
 0.1003  2014-02-01
         Issue a warning if a user uses XML::MyXML instead of XML::MyXML::II
 

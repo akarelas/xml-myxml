@@ -13,7 +13,7 @@ use Test::Deep;
 use Encode;
 use File::Temp qw/ tempfile /;
 
-use XML::MyXML::II qw(:all);
+use XML::MyXML qw(:all);
 
 my $xml = encode_utf8("<item><name>Τραπέζι</name><price><usd>10.00</usd><eur>8.50</eur></price></item>");
 my $simple = xml_to_simple($xml);
@@ -85,6 +85,16 @@ is($obj->tag, 'school:μαθητής', 'tag not stripped_ns ok 1');
 is($obj->tag({ strip_ns => 0 }), 'school:μαθητής', 'tag not stripped_ns ok 2');
 is($obj->tag({ strip_ns => 1 }), 'μαθητής', 'tag stripped_ns ok');
 
+# TEST STRIP_NS XML_TO_SIMPLE
+$simple = xml_to_simple($xml, { strip_ns => 1 });
+cmp_deeply($simple, {
+	'μαθητής' => 'Peter',
+}, 'xml_to_simple with strip_ns ok');
+$simple = xml_to_simple($xml);
+cmp_deeply($simple, {
+	'school:μαθητής' => 'Peter',
+}, 'xml_to_simple without strip_ns ok');
+
 # TEST QUICK-CLOSE
 $simple = { person => { name => undef } };
 is(simple_to_xml($simple), '<person><name/></person>', 'quick close worked ok 1');
@@ -127,6 +137,9 @@ my ($ch1, $ch2);
 }
 is($ch1->to_xml, '<item>Table</item>', 'item1 ok');
 is($ch2->to_xml, '<item>Chair</item>', 'item2 ok');
+
+# CHECK DOUBLE-DECODING BUG
+is(XML::MyXML::_decode('&#x26;#65;'), '&#65;', 'double-decoding not occurring');
 
 
 done_testing();
