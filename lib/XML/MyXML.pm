@@ -100,14 +100,13 @@ sub _decode {
 	my $entities = shift || {};
 	my $flags = shift || {};
 	defined $string or $string = '';
-	my %replace = reverse (
-					(reverse (%$entities)),
+	my %replace = ( %$entities, reverse(
 					'<' => '&lt;',
 					'>' => '&gt;',
 					'&' => '&amp;',
 					'\'' => '&apos;',
 					'"' => '&quot;',
-	);
+	));
 	my @capture = map "\Q$_\E", keys %replace;
 	push @capture, '&#x[0-9A-Fa-f]+;', '&#[0-9]+;';
 	my $capture = "(".join("|", @capture).")";

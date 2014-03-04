@@ -141,5 +141,20 @@ is($ch2->to_xml, '<item>Chair</item>', 'item2 ok');
 # CHECK DOUBLE-DECODING BUG
 is(XML::MyXML::_decode('&#x26;#65;'), '&#65;', 'double-decoding not occurring');
 
+# TWO MATCHING ENTITIES
+$xml = <<'EOB';
+<!ENTITY copyright "Alex">
+<!ENTITY author "Alex">
+<person>
+	<author>&author;</author>
+	<copy>&copyright;</copy>
+</person>
+EOB
+$simple = xml_to_simple($xml, {internal => 1});
+cmp_deeply($simple, {
+	author => 'Alex',
+	copy => 'Alex',
+}, 'matching entities ok');
+
 
 done_testing();
