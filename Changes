@@ -1,5 +1,9 @@
 Revision history for XML-MyXML
 
+0.9002  2014-04-11
+        Improved documentation, with an example
+        Fixed documentation (added 'xml_escape' in the list of exportable methods)
+
 0.9001  2014-03-04
         Made Changes file compliant
         Fixed bug where it wasn't possible to have two entities resolving to the same string
