@@ -25,9 +25,9 @@ use Encode;
     $obj->simplify is hashref { item => { name => 'Table', price => { usd => '10.00', eur => '8.50' } } }
     $obj->simplify({ internal => 1 }) is hashref { name => 'Table', price => { usd => '10.00', eur => '8.50' } }
 
-=head1 EXPORT
+=head1 EXPORTABLE
 
-tidy_xml, xml_to_object, object_to_xml, simple_to_xml, xml_to_simple, check_xml
+xml_escape, tidy_xml, xml_to_object, object_to_xml, simple_to_xml, xml_to_simple, check_xml
 
 =head1 FEATURES & LIMITATIONS
 
@@ -661,6 +661,43 @@ sub parent {
 =head2 $obj->path("subtag1/subsubtag2[attr1=val1][attr2]/.../subsubsubtagX")
 
 Returns the element specified by the path as an XML::MyXML::Object object. When there are more than one tags with the specified name in the last step of the path, it will return all of them as an array. In scalar context will only return the first one. CSS3-style attribute selectors are allowed in the path next to the tagnames, for example: C<< p[class=big] >> will only return C<< <p> >> elements that contain an attribute called "class" with a value of "big". p[class] on the other hand will return p elements having a "class" attribute, but that attribute can have any value.
+
+An example... To print the last names of all the students from the following XML, do:
+
+    my $xml = <<'EOB';
+    <people>
+        <student>
+            <name>
+                <first>Alex</first>
+                <last>Karelas</last>
+            </name>
+        </student>
+        <student>
+            <name>
+                <first>John</first>
+                <last>Doe</last>
+            </name>
+        </student>
+        <teacher>
+            <name>
+                <first>Mary</first>
+                <last>Poppins</last>
+            </name>
+        </teacher>
+        <teacher>
+            <name>
+                <first>Peter</first>
+                <last>Gabriel</last>
+            </name>
+        </teacher>
+    </people>
+    EOB
+    
+    my $obj = xml_to_object($xml);
+    my @students = $obj->path('student');
+    foreach my $student (@students) {
+        print $student->path('name/last')->value, "\n";
+    }
 
 =cut
 
