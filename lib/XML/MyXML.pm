@@ -176,7 +176,7 @@ sub xml_to_object {
 	my $flags = (@_ and defined $_[0]) ? $_[0] : {};
 
 	if ($flags->{'file'}) {
-		open my $fh, '<', $xml	or confess "Error: The file '$xml' could not be opened for reading: $!";
+		open my $fh, '<', $xml	or croak "Error: The file '$xml' could not be opened for reading: $!";
 		$xml = join '', <$fh>;
 		close $fh;
 	}
@@ -187,7 +187,7 @@ sub xml_to_object {
 	eval {
 		$xml = decode($encoding, $xml, Encode::FB_CROAK);
 	};
-	! $@	or confess 'Error: Input string is invalid UTF-8';
+	! $@	or croak 'Error: Input string is invalid UTF-8';
 
 	my $entities = {};
 
@@ -199,10 +199,10 @@ sub xml_to_object {
 		my $init_ws = 1;
 		foreach my $el (@els) {
 			if ($el =~ /^<!--/) {
-				if ($el !~ /-->$/) { confess encode_utf8("Error: unclosed XML comment block - '$el'"); }
+				if ($el !~ /-->$/) { croak encode_utf8("Error: unclosed XML comment block - '$el'"); }
 				undef $el;
 			} elsif ($el =~ /^<\?/) { # like <?xml?> or <?target?>
-				if ($el !~ /\?>$/) { confess encode_utf8("Error: Erroneous special markup - '$el'"); }
+				if ($el !~ /\?>$/) { croak encode_utf8("Error: Erroneous special markup - '$el'"); }
 				undef $el;
 			} elsif (my ($entname, undef, $entvalue) = $el =~ /^<!ENTITY\s+(\S+)\s+(['"])(.*?)\2\s*>$/g) {
 				$entities->{"&$entname;"} = _decode($entvalue);
@@ -218,18 +218,18 @@ sub xml_to_object {
 			}
 		}
 		@els = grep { defined $_ } @els;
-		if (! @els) { confess "Error: No elements in XML document"; }
+		if (! @els) { croak "Error: No elements in XML document"; }
 	}
 	my @stack;
 	my $object = bless ({ content => [] }, 'XML::MyXML::Object');
 	my $pointer = $object;
 	foreach my $el (@els) {
 		if ($el =~ /^<\/?>$/) {
-			confess encode_utf8("Error: Strange element: '$el'");
+			croak encode_utf8("Error: Strange element: '$el'");
 		} elsif ($el =~ /^<\/[^\s>]+>$/) {
 			my ($element) = $el =~ /^<\/(\S+)>$/g;
-			if (! length($element)) { confess encode_utf8("Error: Strange element: '$el'"); }
-			if ($stack[-1]{'element'} ne $element) { confess encode_utf8("Error: Incompatible stack element: stack='".$stack[-1]{'element'}."' element='$el'"); }
+			if (! length($element)) { croak encode_utf8("Error: Strange element: '$el'"); }
+			if ($stack[-1]{'element'} ne $element) { croak encode_utf8("Error: Incompatible stack element: stack='".$stack[-1]{'element'}."' element='$el'"); }
 			my $stackentry = pop @stack;
 			if ($#{$stackentry->{'content'}} == -1) {
 				delete $stackentry->{'content'};
@@ -237,7 +237,7 @@ sub xml_to_object {
 			$pointer = $stackentry->{'parent'};
 		} elsif ($el =~ /^<[^>]+\/>$/) {
 			my ($element) = $el =~ /^<([^\s>\/]+)/g;
-			if (! length($element)) { confess encode_utf8("Error: Strange element: '$el'"); }
+			if (! length($element)) { croak encode_utf8("Error: Strange element: '$el'"); }
 			my $elementmeta = quotemeta($element);
 			$el =~ s/^<$elementmeta//;
 			$el =~ s/\/>$//;
@@ -247,7 +247,7 @@ sub xml_to_object {
 			my %attr;
 			foreach my $attr (@attrs) {
 				my ($name, undef, $value) = $attr =~ /^(\S+?)=(['"])(.*?)\2$/g;
-				if (! length($name) or ! defined($value)) { confess encode_utf8("Error: Strange attribute: '$attr'"); }
+				if (! length($name) or ! defined($value)) { croak encode_utf8("Error: Strange attribute: '$attr'"); }
 				$attr{$name} = _decode($value, $entities);
 			}
 			my $entry = { element => $element, attrs => \%attr, parent => $pointer };
@@ -256,7 +256,7 @@ sub xml_to_object {
 			push @{$pointer->{'content'}}, $entry;
 		} elsif ($el =~ /^<[^\s>\/][^>]*>$/) {
 			my ($element) = $el =~ /^<([^\s>]+)/g;
-			if (! length($element)) { confess encode_utf8("Error: Strange element: '$el'"); }
+			if (! length($element)) { croak encode_utf8("Error: Strange element: '$el'"); }
 			my $elementmeta = quotemeta($element);
 			$el =~ s/^<$elementmeta//;
 			$el =~ s/>$//;
@@ -266,7 +266,7 @@ sub xml_to_object {
 			my %attr;
 			foreach my $attr (@attrs) {
 				my ($name, undef, $value) = $attr =~ /^(\S+?)=(['"])(.*?)\2$/g;
-				if (! length($name) or ! defined($value)) { confess encode_utf8("Error: Strange attribute: '$attr'"); }
+				if (! length($name) or ! defined($value)) { croak encode_utf8("Error: Strange attribute: '$attr'"); }
 				$attr{$name} = _decode($value, $entities);
 			}
 			my $entry = { element => $element, attrs => \%attr, content => [], parent => $pointer };
@@ -281,10 +281,10 @@ sub xml_to_object {
 			bless $entry, 'XML::MyXML::Object';
 			push @{$pointer->{'content'}}, $entry;
 		} else {
-			confess encode_utf8("Error: Strange element: '$el'");
+			croak encode_utf8("Error: Strange element: '$el'");
 		}
 	}
-	if (@stack) { confess encode_utf8("Error: The <$stack[-1]{'element'}> element has not been closed in XML"); }
+	if (@stack) { croak encode_utf8("Error: The <$stack[-1]{'element'}> element has not been closed in XML"); }
 	$object = $object->{'content'}[0];
 	$object->{'parent'} = undef;
 	return $object;
@@ -390,9 +390,9 @@ sub simple_to_xml {
 
 	my $xml = '';
 	my ($key, $value, @residue) = (ref $arref eq 'HASH') ? %$arref : @$arref;
-	if (@residue) { confess "Error: the provided simple ref contains more than 1 top element"; }
+	if (@residue) { croak "Error: the provided simple ref contains more than 1 top element"; }
 	my ($tag) = $key =~ /^(\S+)/g;
-	confess encode_utf8("Error: Strange key: $key") if ! defined $tag;
+	croak encode_utf8("Error: Strange key: $key") if ! defined $tag;
 
 	if (! ref $value) {
 		if (defined $value and length $value) {
@@ -409,7 +409,7 @@ sub simple_to_xml {
 	$xml = $decl . $xml;
 
 	if (defined $flags->{'save'}) {
-		open my $fh, '>', $flags->{'save'} or confess "Error: Couldn't open file '$flags->{'save'}' for writing: $!";
+		open my $fh, '>', $flags->{'save'} or croak "Error: Couldn't open file '$flags->{'save'}' for writing: $!";
 		binmode $fh, ':encoding(UTF-8)';
 		print $fh $xml;
 		close $fh;
@@ -432,7 +432,7 @@ sub _arrayref_to_xml {
 		my $key = $arref->[$i++];
 		#my $key = shift @$arref;
 		my ($tag) = $key =~ /^(\S+)/g;
-		confess encode_utf8("Error: Strange key: $key") if ! defined $tag;
+		croak encode_utf8("Error: Strange key: $key") if ! defined $tag;
 		my $value = $arref->[$i++];
 		#my $value = shift @$arref;
 
@@ -460,7 +460,7 @@ sub _hashref_to_xml {
 
 	while (my ($key, $value) = each %$hashref) {
 		my ($tag) = $key =~ /^(\S+)/g;
-		confess encode_utf8("Error: Strange key: $key") if ! defined $tag;
+		croak encode_utf8("Error: Strange key: $key") if ! defined $tag;
 
 		if ($key eq '!as_is') {
 			$xml .= $value if check_xml($value);
@@ -855,7 +855,7 @@ sub to_xml {
 	if ($flags->{'tidy'}) { $xml = XML::MyXML::tidy_xml($xml, { %$flags, complete => 0, save => undef }); }
 	$xml = $decl . $xml;
 	if (defined $flags->{'save'}) {
-		open my $fh, '>', $flags->{'save'} or confess "Error: Couldn't open file '$flags->{'save'}' for writing: $!";
+		open my $fh, '>', $flags->{'save'} or croak "Error: Couldn't open file '$flags->{'save'}' for writing: $!";
 		print $fh $xml;
 		close $fh;
 	}
