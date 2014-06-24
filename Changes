@@ -1,5 +1,9 @@
 Revision history for XML-MyXML
 
+0.9004  2014-06-24
+        The path parameter of the $obj->path method can now also include the root element inside it, if preceeded with a slash
+            e.g. $obj->path('/root-tag/child-tag/grandchild-tag')
+
 0.9003  2014-06-15
         On error, all functions now 'croak' rather than 'confess'
 

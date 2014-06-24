@@ -156,5 +156,73 @@ cmp_deeply($simple, {
 	copy => 'Alex',
 }, 'matching entities ok');
 
+# PATH TESTS
+note 'path tests';
+{
+	$xml = <<'EOB';
+		<people>
+			<student class="B">
+				<name>
+					<first>Alex</first>
+					<last>Karelas</last>
+				</name>
+			</student>
+			<student class="A">
+				<name>
+					<first>John</first>
+					<last>Doe</last>
+				</name>
+			</student>
+			<teacher class="A">
+				<name>
+					<first>Mary</first>
+					<last>Poppins</last>
+				</name>
+			</teacher>
+			<teacher class="A">
+				<name>
+					<first>Peter</first>
+					<last>Gabriel</last>
+				</name>
+			</teacher>
+		</people>
+EOB
+	my $obj = xml_to_object($xml);
+	my @people1 = map $_->simplify({internal => 1}), $obj->path('student');
+	my @people2 = map $_->simplify({internal => 1}), $obj->path('/people/student');
+	cmp_deeply(\@people1, [
+		{
+			name => {
+				first => 'Alex',
+				last => 'Karelas',
+			},
+		},
+		{
+			name => {
+				first => 'John',
+				last => 'Doe',
+			},
+		},
+	], 'people1 ok');
+	cmp_deeply(\@people2, \@people1, 'people2 ok');
+	@people1 = map $_->simplify, $obj->path('student[class=A]');
+	@people2 = map $_->simplify, $obj->path('/people/student[class=A]');
+	cmp_deeply(\@people1, [
+		{
+			student => {
+				name => {
+					first => 'John',
+					last => 'Doe',
+				},
+			},
+		},
+	], 'people1 ok 2');
+	cmp_deeply(\@people2, \@people1, 'people2 ok 2');
+	@people1 = map $_->simplify, $obj->path('/peoples/student');
+	cmp_deeply(\@people1, [], 'paths first element compares ok');
+}
+
+
+
 
 done_testing();

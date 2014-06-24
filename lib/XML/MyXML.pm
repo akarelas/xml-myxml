@@ -660,7 +660,7 @@ sub parent {
 
 =head2 $obj->path("subtag1/subsubtag2[attr1=val1][attr2]/.../subsubsubtagX")
 
-Returns the element specified by the path as an XML::MyXML::Object object. When there are more than one tags with the specified name in the last step of the path, it will return all of them as an array. In scalar context will only return the first one. CSS3-style attribute selectors are allowed in the path next to the tagnames, for example: C<< p[class=big] >> will only return C<< <p> >> elements that contain an attribute called "class" with a value of "big". p[class] on the other hand will return p elements having a "class" attribute, but that attribute can have any value.
+Returns the element specified by the path as an XML::MyXML::Object object. When there are more than one tags with the specified name in the last step of the path, it will return all of them as an array. In scalar context will only return the first one. Simple CSS3-style attribute selectors are allowed in the path next to the tagnames, for example: C<< p[class=big] >> will only return C<< <p> >> elements that contain an attribute called "class" with a value of "big". p[class] on the other hand will return p elements having a "class" attribute, but that attribute can have any value.
 
 An example... To print the last names of all the students from the following XML, do:
 
@@ -699,6 +699,12 @@ An example... To print the last names of all the students from the following XML
         print $student->path('name/last')->value, "\n";
     }
 
+If you wish to describe the root element in the path as well, prepend it in the path with a slash like so:
+
+    if( $student->path('/student/name/last')->value eq $student->path('name/last')->value ) {
+        print "The two are identical", "\n";
+    }
+
 =cut
 
 sub path {
@@ -707,18 +713,22 @@ sub path {
 
 	my @path;
 	my $orig_path = $path;
-	$path = "/" . $path;
+	my $start_root = $path =~ m!^/!;
+	$path = "/" . $path		unless $start_root;
 	while (length $path) {
 		my $success = $path =~ s!^/((?:[^/\[]*)?(?:\[[^\]]+\])*)!!;
 		my $seg = $1;
 		if ($success) {
 			push @path, $seg;
 		} else {
-			die "Invalid path: $orig_path";
+			croak "Invalid XML path: $orig_path";
 		}
 	}
 
 	my $el = $self;
+	if ($start_root) {
+		$el->cmp_element(shift @path)	or return;
+	}
 	for (my $i = 0; $i < $#path; $i++) {
 		my $pathstep = $path[$i];
 		($el) = $el->children($pathstep);
