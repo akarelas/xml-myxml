@@ -220,6 +220,8 @@ EOB
 	cmp_deeply(\@people2, \@people1, 'people2 ok 2');
 	@people1 = map $_->simplify, $obj->path('/peoples/student');
 	cmp_deeply(\@people1, [], 'paths first element compares ok');
+	is($obj->path('/people')->tag, 'people', 'identity path ok');
+	is($obj->path('/')->tag, 'people', 'identity path ok 2');
 }
 
 

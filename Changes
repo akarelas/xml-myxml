@@ -1,5 +1,8 @@
 Revision history for XML-MyXML
 
+0.9005  2014-06-24
+        Fixed bug where just $obj->path('/root-tag') wouldn't return the root element
+
 0.9004  2014-06-24
         The path parameter of the $obj->path method can now also include the root element inside it, if preceeded with a slash
             e.g. $obj->path('/root-tag/child-tag/grandchild-tag')
