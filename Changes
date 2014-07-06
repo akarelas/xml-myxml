@@ -1,5 +1,9 @@
 Revision history for XML-MyXML
 
+0.9006  2014-07-06
+        Replaced Test::Deep::cmp_deeply with Test::More::is_deeply
+        Removed the only non-core dependency from the prereqs (Test::Deep)
+
 0.9005  2014-06-24
         Fixed bug where just $obj->path('/root-tag') wouldn't return the root element
 

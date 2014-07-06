@@ -8,7 +8,6 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
 use Test::More;
-use Test::Deep;
 
 use Encode;
 use File::Temp qw/ tempfile /;
@@ -18,7 +17,7 @@ use XML::MyXML qw(:all);
 my $xml = encode_utf8("<item><name>Τραπέζι</name><price><usd>10.00</usd><eur>8.50</eur></price></item>");
 my $simple = xml_to_simple($xml);
 
-cmp_deeply($simple, {
+is_deeply($simple, {
 	item => {
 		name => 'Τραπέζι',
 		price => {
@@ -68,7 +67,7 @@ close $thatfh2;
 
 simple_to_xml($simple, { save => $filename1 });
 my $test_smp = xml_to_simple($filename1, { file => 1 });
-cmp_deeply($test_smp, {
+is_deeply($test_smp, {
 	item => {
 		name => 'Τραπέζι',
 		price => {
@@ -87,11 +86,11 @@ is($obj->tag({ strip_ns => 1 }), 'μαθητής', 'tag stripped_ns ok');
 
 # TEST STRIP_NS XML_TO_SIMPLE
 $simple = xml_to_simple($xml, { strip_ns => 1 });
-cmp_deeply($simple, {
+is_deeply($simple, {
 	'μαθητής' => 'Peter',
 }, 'xml_to_simple with strip_ns ok');
 $simple = xml_to_simple($xml);
-cmp_deeply($simple, {
+is_deeply($simple, {
 	'school:μαθητής' => 'Peter',
 }, 'xml_to_simple without strip_ns ok');
 
@@ -151,7 +150,7 @@ $xml = <<'EOB';
 </person>
 EOB
 $simple = xml_to_simple($xml, {internal => 1});
-cmp_deeply($simple, {
+is_deeply($simple, {
 	author => 'Alex',
 	copy => 'Alex',
 }, 'matching entities ok');
@@ -190,7 +189,7 @@ EOB
 	my $obj = xml_to_object($xml);
 	my @people1 = map $_->simplify({internal => 1}), $obj->path('student');
 	my @people2 = map $_->simplify({internal => 1}), $obj->path('/people/student');
-	cmp_deeply(\@people1, [
+	is_deeply(\@people1, [
 		{
 			name => {
 				first => 'Alex',
@@ -204,10 +203,10 @@ EOB
 			},
 		},
 	], 'people1 ok');
-	cmp_deeply(\@people2, \@people1, 'people2 ok');
+	is_deeply(\@people2, \@people1, 'people2 ok');
 	@people1 = map $_->simplify, $obj->path('student[class=A]');
 	@people2 = map $_->simplify, $obj->path('/people/student[class=A]');
-	cmp_deeply(\@people1, [
+	is_deeply(\@people1, [
 		{
 			student => {
 				name => {
@@ -217,9 +216,9 @@ EOB
 			},
 		},
 	], 'people1 ok 2');
-	cmp_deeply(\@people2, \@people1, 'people2 ok 2');
+	is_deeply(\@people2, \@people1, 'people2 ok 2');
 	@people1 = map $_->simplify, $obj->path('/peoples/student');
-	cmp_deeply(\@people1, [], 'paths first element compares ok');
+	is_deeply(\@people1, [], 'paths first element compares ok');
 	is($obj->path('/people')->tag, 'people', 'identity path ok');
 	is($obj->path('/')->tag, 'people', 'identity path ok 2');
 }
