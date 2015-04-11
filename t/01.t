@@ -1,11 +1,6 @@
-#!/usr/bin/env perl
-
 use strict;
 use warnings;
 use utf8;
-
-use FindBin qw($Bin);
-use lib "$Bin/../lib";
 
 use Test::More;
 
