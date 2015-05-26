@@ -1,5 +1,8 @@
 Revision history for XML-MyXML
 
+0.9007  2015-05-26
+        Add "provides" clause in META.yml, META.json files
+
 0.9006  2014-07-06
         Replaced Test::Deep::cmp_deeply with Test::More::is_deeply
         Removed the only non-core dependency from the prereqs (Test::Deep)
