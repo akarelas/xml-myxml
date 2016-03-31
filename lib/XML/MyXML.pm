@@ -238,8 +238,7 @@ sub xml_to_object {
 		} elsif ($el =~ /^<[^>]+\/>$/) {
 			my ($element) = $el =~ /^<([^\s>\/]+)/g;
 			if (! length($element)) { croak encode_utf8("Error: Strange element: '$el'"); }
-			my $elementmeta = quotemeta($element);
-			$el =~ s/^<$elementmeta//;
+			$el =~ s/^<\Q$element\E//;
 			$el =~ s/\/>$//;
 			my @attrs = $el =~ /\s+(\S+=(['"]).*?\2)/g;
 			my $i = 1;
@@ -257,8 +256,7 @@ sub xml_to_object {
 		} elsif ($el =~ /^<[^\s>\/][^>]*>$/) {
 			my ($element) = $el =~ /^<([^\s>]+)/g;
 			if (! length($element)) { croak encode_utf8("Error: Strange element: '$el'"); }
-			my $elementmeta = quotemeta($element);
-			$el =~ s/^<$elementmeta//;
+			$el =~ s/^<\Q$element\E//;
 			$el =~ s/>$//;
 			my @attrs = $el =~ /\s+(\S+=(['"]).*?\2)/g;
 			my $i = 1;

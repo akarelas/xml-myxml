@@ -9,8 +9,18 @@ use File::Temp qw/ tempfile /;
 
 use XML::MyXML qw(:all);
 
-my $xml = encode_utf8("<item><name>Τραπέζι</name><price><usd>10.00</usd><eur>8.50</eur></price></item>");
+my $xml = encode_utf8("<(ng-something)><eur>10</eur><usd>8</usd></(ng-something)>");
 my $simple = xml_to_simple($xml);
+
+is_deeply($simple, {
+	'(ng-something)' => {
+		eur => 10,
+		usd => 8,
+	}
+}, 'xml_to_simple, tagname with symbols ok');
+
+$xml = encode_utf8("<item><name>Τραπέζι</name><price><usd>10.00</usd><eur>8.50</eur></price></item>");
+$simple = xml_to_simple($xml);
 
 is_deeply($simple, {
 	item => {

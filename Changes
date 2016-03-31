@@ -1,5 +1,8 @@
 Revision history for XML-MyXML
 
+0.9008  2016-03-31
+        Minor optimization in speed
+
 0.9007  2015-05-26
         Add "provides" clause in META.yml, META.json files
 
