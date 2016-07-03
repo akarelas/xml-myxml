@@ -607,7 +607,11 @@ sub _parse_description {
 	my ($desc) = @_;
 
 	my ($tag, $attrs_str) = $desc =~ /^([^\[]*)(.*)$/g;
-	my %attrs = $attrs_str =~ /\[([^=\]]+)(?:=([^\]]*))?\]/g;
+	my %attrs = $attrs_str =~ /\[([^\]=]+)(?:=(\"[^"]*\"|[^"\]]*))?\]/g;
+	foreach my $value (values %attrs) {
+		$value =~ s/\A\"//;
+		$value =~ s/\"\z//;
+	}
 
 	return ($tag, \%attrs);
 }
@@ -658,7 +662,7 @@ sub parent {
 
 =head2 $obj->path("subtag1/subsubtag2[attr1=val1][attr2]/.../subsubsubtagX")
 
-Returns the element specified by the path as an XML::MyXML::Object object. When there are more than one tags with the specified name in the last step of the path, it will return all of them as an array. In scalar context will only return the first one. Simple CSS3-style attribute selectors are allowed in the path next to the tagnames, for example: C<< p[class=big] >> will only return C<< <p> >> elements that contain an attribute called "class" with a value of "big". p[class] on the other hand will return p elements having a "class" attribute, but that attribute can have any value.
+Returns the element specified by the path as an XML::MyXML::Object object. When there are more than one tags with the specified name in the last step of the path, it will return all of them as an array. In scalar context will only return the first one. Simple CSS3-style attribute selectors are allowed in the path next to the tagnames, for example: C<< p[class=big] >> will only return C<< <p> >> elements that contain an attribute called "class" with a value of "big". p[class] on the other hand will return p elements having a "class" attribute, but that attribute can have any value. It's possible to surround attribute values with quotes, like so: C<< input[name="foo[]"] >>
 
 An example... To print the last names of all the students from the following XML, do:
 
@@ -697,11 +701,20 @@ An example... To print the last names of all the students from the following XML
         print $student->path('name/last')->value, "\n";
     }
 
+...or like this...
+
+    my @last = $obj->path('student/name/last');
+    foreach my $last (@last) {
+        print $last->value, "\n";
+    }
+
 If you wish to describe the root element in the path as well, prepend it in the path with a slash like so:
 
     if( $student->path('/student/name/last')->value eq $student->path('name/last')->value ) {
         print "The two are identical", "\n";
     }
+
+Optional flags: none
 
 =cut
 
@@ -714,7 +727,7 @@ sub path {
 	my $start_root = $path =~ m!^/!;
 	$path = "/" . $path		unless $start_root;
 	while (length $path) {
-		my $success = $path =~ s!^/((?:[^/\[]*)?(?:\[[^\]]+\])*)!!;
+		my $success = $path =~ s!^/((?:[^/\[]*)?(?:\[[^\]=]+(?:=(?:\"[^"]*\"|[^"\]]*))?\])*)!!;
 		my $seg = $1;
 		if ($success) {
 			push @path, $seg;

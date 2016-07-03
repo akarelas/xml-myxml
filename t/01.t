@@ -189,6 +189,12 @@ note 'path tests';
 					<last>Gabriel</last>
 				</name>
 			</teacher>
+			<teacher class="High ] C">
+				<name>
+					<first>Barbara</first>
+					<last>Mullins</last>
+				</name>
+			</teacher>
 		</people>
 EOB
 	my $obj = xml_to_object($xml);
@@ -211,6 +217,7 @@ EOB
 	is_deeply(\@people2, \@people1, 'people2 ok');
 	@people1 = map $_->simplify, $obj->path('student[class=A]');
 	@people2 = map $_->simplify, $obj->path('/people/student[class=A]');
+	my @people3 = map $_->simplify, $obj->path('student[class="A"]');
 	is_deeply(\@people1, [
 		{
 			student => {
@@ -222,12 +229,15 @@ EOB
 		},
 	], 'people1 ok 2');
 	is_deeply(\@people2, \@people1, 'people2 ok 2');
+	is_deeply(\@people3, \@people1, 'quotes in attr values');
 	@people1 = map $_->simplify, $obj->path('/peoples/student');
 	is_deeply(\@people1, [], 'paths first element compares ok');
 	is($obj->path('/people')->tag, 'people', 'identity path ok');
 	is($obj->path('/')->tag, 'people', 'identity path ok 2');
 	my @names_a = map $_->value, $obj->path('/people/[class=A]/name/first');
 	is_deeply(\@names_a, ['John', 'Mary', 'Peter'], 'multiple deep paths');
+	my $special = $obj->path('teacher[class="High ] C"]/name/first')->value;
+	is($special, 'Barbara', 'closing square bracket in attr value');
 }
 
 

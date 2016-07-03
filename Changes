@@ -1,5 +1,8 @@
 Revision history for XML-MyXML
 
+0.9010  2016-07-04
+        In path method, allow surrounding attr value with quotes
+
 0.9009  2016-07-03
         path method can now follow multiple paths to target elements
 
