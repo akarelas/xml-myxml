@@ -728,7 +728,7 @@ sub path {
 		$self->cmp_element(shift @path)		or return;
 	}
 	for (my $i = 0; $i <= $#path; $i++) {
-		@result = $result[0]->children( $path[$i] );
+		@result = map $_->children( $path[$i] ), @result;
 		@result		or return;
 	}
 	return wantarray ? @result : $result[0];

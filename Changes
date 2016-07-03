@@ -1,5 +1,8 @@
 Revision history for XML-MyXML
 
+0.9009  2016-07-03
+        path method can now follow multiple paths to target elements
+
 0.9008  2016-03-31
         Minor optimization in speed
 

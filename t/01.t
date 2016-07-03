@@ -226,6 +226,8 @@ EOB
 	is_deeply(\@people1, [], 'paths first element compares ok');
 	is($obj->path('/people')->tag, 'people', 'identity path ok');
 	is($obj->path('/')->tag, 'people', 'identity path ok 2');
+	my @names_a = map $_->value, $obj->path('/people/[class=A]/name/first');
+	is_deeply(\@names_a, ['John', 'Mary', 'Peter'], 'multiple deep paths');
 }
 
 
