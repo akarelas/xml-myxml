@@ -255,5 +255,10 @@ EOB
 is($obj->to_xml({bytes => 1, tidy => 1}), encode_utf8($tidy_xml), 'to_xml with bytes and tidy flags');
 is($obj->to_tidy_xml({bytes => 1}), encode_utf8($tidy_xml), 'to_tidy_xml with bytes flag');
 
+# PARENT
+note 'parent';
+is($obj->path('ονομα')->parent, $obj, 'childs parent == identity');
+is($obj->parent, undef, 'top parent == undef');
+
 
 done_testing();

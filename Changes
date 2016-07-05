@@ -4,7 +4,8 @@ Revision history for XML-MyXML
         BREAKING CHANGE: XML documents parsed or produced by this module are character strings, rather than
             bytes/octets. This is in order to follow the convention explained by Ricardo Signes here:
             https://www.youtube.com/watch?v=TmTeXcEixEg
-            An optional function flag changes that behaviour
+            An optional 'bytes' function flag changes that behaviour
+        Added $obj->parent method
 
 0.9010  2016-07-04
         In path method, allow surrounding attr value with quotes

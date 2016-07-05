@@ -655,12 +655,6 @@ sub children {
 	return @results;
 }
 
-sub parent {
-	my $self = shift;
-
-	return $self->{'parent'};
-}
-
 =head2 $obj->path("subtag1/subsubtag2[attr1=val1][attr2]/.../subsubsubtagX")
 
 Returns the element specified by the path as an XML::MyXML::Object object. When there are more than one tags with the specified name in the last step of the path, it will return all of them as an array. In scalar context will only return the first one. Simple CSS3-style attribute selectors are allowed in the path next to the tagnames, for example: C<< p[class=big] >> will only return C<< <p> >> elements that contain an attribute called "class" with a value of "big". p[class] on the other hand will return p elements having a "class" attribute, but that attribute can have any value. It's possible to surround attribute values with quotes, like so: C<< input[name="foo[]"] >>
@@ -833,6 +827,20 @@ sub tag {
 	} else {
 		return undef;
 	}
+}
+
+=head2 $obj->parent
+
+Returns the XML::MyXML::Object element that is the parent of $obj in the document. Returns undef if $obj doesn't have a parent.
+
+Optional flags: none
+
+=cut
+
+sub parent {
+	my $self = shift;
+
+	return $self->{'parent'};
 }
 
 =head2 $obj->simplify
