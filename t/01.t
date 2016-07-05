@@ -9,7 +9,7 @@ use File::Temp qw/ tempfile /;
 
 use XML::MyXML qw(:all);
 
-my $xml = encode_utf8("<(ng-something)><eur>10</eur><usd>8</usd></(ng-something)>");
+my $xml = "<(ng-something)><eur>10</eur><usd>8</usd></(ng-something)>";
 my $simple = xml_to_simple($xml);
 
 is_deeply($simple, {
@@ -19,7 +19,7 @@ is_deeply($simple, {
 	}
 }, 'xml_to_simple, tagname with symbols ok');
 
-$xml = encode_utf8("<item><name>Τραπέζι</name><price><usd>10.00</usd><eur>8.50</eur></price></item>");
+$xml = "<item><name>Τραπέζι</name><price><usd>10.00</usd><eur>8.50</eur></price></item>";
 $simple = xml_to_simple($xml);
 
 is_deeply($simple, {
@@ -59,16 +59,14 @@ my $correct_tidy_xml = <<'EOB';
   </price>
 </item>
 EOB
-is($tidy_xml, encode_utf8($correct_tidy_xml), 'tidy with wide-characters works well');
+is($tidy_xml, $correct_tidy_xml, 'tidy with wide-characters works well');
 
 ($obj, $xml2) = ();
 
-is($xml, encode_utf8("<item><name>Τραπέζι</name><price><usd>10.00</usd><eur>8.50</eur></price></item>"), '$xml is unchanged');
+is($xml, "<item><name>Τραπέζι</name><price><usd>10.00</usd><eur>8.50</eur></price></item>", '$xml is unchanged');
 
 my ($thatfh1, $filename1) = tempfile('myxml-XXXXXXXX', TMPDIR => 1, UNLINK => 1);
-my ($thatfh2, $filename2) = tempfile('myxml-XXXXXXXX', TMPDIR => 1, UNLINK => 1);
 close $thatfh1;
-close $thatfh2;
 
 simple_to_xml($simple, { save => $filename1 });
 my $test_smp = xml_to_simple($filename1, { file => 1 });
@@ -83,7 +81,7 @@ is_deeply($test_smp, {
 }, 'simple_to_xml (save) and xml_to_simple (file) ok');
 
 # TEST NO-STRIPNS TAG
-$xml = encode_utf8("<school:μαθητής>Peter</school:μαθητής>");
+$xml = "<school:μαθητής>Peter</school:μαθητής>";
 $obj = xml_to_object($xml);
 is($obj->tag, 'school:μαθητής', 'tag not stripped_ns ok 1');
 is($obj->tag({ strip_ns => 0 }), 'school:μαθητής', 'tag not stripped_ns ok 2');
@@ -109,12 +107,12 @@ is(simple_to_xml($simple), '<person><name>Alex</name></person>', 'slow close wor
 
 # TEST VIEW/CHANGE ATTRS
 note 'test view/change attrs';
-$xml = encode_utf8('<people><person όνομα="γιώργος"><spouse>Maria</spouse></person></people>');
+$xml = '<people><person όνομα="γιώργος"><spouse>Maria</spouse></person></people>';
 $obj = xml_to_object($xml);
 is($obj->path('person')->attr('όνομα'), 'γιώργος', 'view ok 1');
 is($obj->path('person')->attr('name2'), undef, 'view ok 2');
 $obj->path('person')->attr('όνομα', 'πέτρος');
-is($obj->to_xml, encode_utf8('<people><person όνομα="πέτρος"><spouse>Maria</spouse></person></people>'), 'change ok 1');
+is($obj->to_xml, '<people><person όνομα="πέτρος"><spouse>Maria</spouse></person></people>', 'change ok 1');
 $obj->path('person')->attr('όνομα', undef);
 is($obj->to_xml, '<people><person><spouse>Maria</spouse></person></people>', 'change ok 2');
 
@@ -124,7 +122,7 @@ is(xml_escape($string), '&lt;&quot;άλ&amp;εξ&apos;&gt;', 'xml string escaped
 
 # WRONG UTF-8 PRODUCES ERROR
 $xml = '<person><name>Γιώργος</name></person>';
-$obj = eval { xml_to_object($xml) };
+$obj = eval { xml_to_object($xml, { bytes => 1 }) };
 ok( $@, 'error occured because of wrong UTF-8' );
 
 # CHECK_XML
@@ -240,7 +238,22 @@ EOB
 	is($special, 'Barbara', 'closing square bracket in attr value');
 }
 
-
+# BYTES FLAG
+note 'bytes flag';
+$xml = <<EOB;
+<ατομο><ονομα>Γιώργος</ονομα></ατομο>
+EOB
+$obj = xml_to_object(encode_utf8($xml), { bytes => 1 });
+is($obj->path('/ατομο/ονομα')->value, 'Γιώργος', 'xml_to_object & path & value from UTF-8 doc');
+is($obj->to_xml, '<ατομο><ονομα>Γιώργος</ονομα></ατομο>', 'to_xml without bytes flag');
+is($obj->to_xml({bytes => 1}), encode_utf8('<ατομο><ονομα>Γιώργος</ονομα></ατομο>'), 'to_xml with bytes flag');
+$tidy_xml = <<EOB;
+<ατομο>
+	<ονομα>Γιώργος</ονομα>
+</ατομο>
+EOB
+is($obj->to_xml({bytes => 1, tidy => 1}), encode_utf8($tidy_xml), 'to_xml with bytes and tidy flags');
+is($obj->to_tidy_xml({bytes => 1}), encode_utf8($tidy_xml), 'to_tidy_xml with bytes flag');
 
 
 done_testing();

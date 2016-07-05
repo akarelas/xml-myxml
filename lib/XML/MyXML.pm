@@ -35,7 +35,7 @@ This module can parse XML comments, CDATA sections, XML entities (the standard f
 
 It will ignore (won't parse) C<< <!DOCTYPE...> >>, C<< <?...?> >> and other C<< <!...> >> special markup
 
-XML documents passed as parameters to this module's functions must be strings containing bytes/octets, rather than contain characters. They also must be UTF-8 encoded unless an encoding is declared in the initial XML declaration <?xml ... ?> of the document. All XML documents produced by this module will be UTF-8 encoded (bytes/octets). However all other strings which are output by this module's functions and methods (and which are not XML documents) will contain characters rather than bytes/octets.
+All strings (XML documents, attribute names, values, etc) produced by this module or passed as parameters to its functions, are strings that contain characters, rather than bytes/octets. Unless you use the C<bytes> function flag (see below), in which case the XML documents (and just the XML documents) will be byte/octet strings.
 
 XML documents to be parsed may not contain the C<< > >> character unencoded in attribute values
 
@@ -62,6 +62,8 @@ C<strip_ns> : strip the namespaces (characters up to and including ':') from the
 C<xslt> : will add a <?xml-stylesheet?> link in the XML that's being output, of type 'text/xsl', pointing to the filename or URL denoted by this flag
 
 C<arrayref> : the function will create a simple arrayref instead of a simple hashref (which will preserve order and elements with duplicate tags)
+
+C<bytes> : the XML document string which is parsed and/or produced by this function, should contain bytes/octets rather than characters
 
 =head1 FUNCTIONS
 
@@ -146,7 +148,7 @@ sub _strip_ns {
 
 Returns the XML string in a tidy format (with tabs & newlines)
 
-Optional flags: C<file>, C<complete>, C<indentstring>, C<save>
+Optional flags: C<file>, C<complete>, C<indentstring>, C<save>, C<bytes>
 
 =cut
 
@@ -167,13 +169,13 @@ sub tidy_xml {
 
 Creates an 'XML::MyXML::Object' object from the raw XML provided
 
-Optional flags: C<file>
+Optional flags: C<file>, C<bytes>
 
 =cut
 
 sub xml_to_object {
 	my $xml = shift;
-	my $flags = (@_ and defined $_[0]) ? $_[0] : {};
+	my $flags = shift || {};
 
 	if ($flags->{'file'}) {
 		open my $fh, '<', $xml	or croak "Error: The file '$xml' could not be opened for reading: $!";
@@ -181,13 +183,15 @@ sub xml_to_object {
 		close $fh;
 	}
 
-	my (undef, undef, $encoding) = $xml =~ /<\?xml(\s[^>]+)?\sencoding=(['"])(.*?)\2/g;
-	$encoding = 'UTF-8'		if ! defined $encoding;
-	if ($encoding =~ /^utf-?8$/i) { $encoding = 'UTF-8'; }
-	eval {
-		$xml = decode($encoding, $xml, Encode::FB_CROAK);
-	};
-	! $@	or croak 'Error: Input string is invalid UTF-8';
+	if ($flags->{bytes} or $flags->{file}) {
+		my (undef, undef, $encoding) = $xml =~ /<\?xml(\s[^>]+)?\sencoding=(['"])(.*?)\2/g;
+		$encoding = 'UTF-8'		if ! defined $encoding;
+		if ($encoding =~ /\Autf-?8\z/i) { $encoding = 'UTF-8'; }
+		eval {
+			$xml = decode($encoding, $xml, Encode::FB_CROAK);
+		};
+		! $@	or croak 'Error: Input string is invalid UTF-8';
+	}
 
 	my $entities = {};
 
@@ -316,7 +320,7 @@ sub _objectarray_to_xml {
 
 Creates an XML string from the 'XML::MyXML::Object' object provided
 
-Optional flags: C<complete>, C<tidy>, C<indentstring>, C<save>
+Optional flags: C<complete>, C<tidy>, C<indentstring>, C<save>, C<bytes>
 
 =cut
 
@@ -332,7 +336,7 @@ sub _tidy_object {
 	my $tabs = shift || 0;
 	my $flags = shift || {};
 
-	$flags->{'indentstring'} = "\t" unless exists $flags->{'indentstring'};
+	my $indentstring = exists $flags->{indentstring} ? $flags->{indentstring} : "\t";
 
 	if (! defined $object->{'content'} or ! @{$object->{'content'}}) { return; }
 	my $hastext;
@@ -353,12 +357,12 @@ sub _tidy_object {
 	@children = @{$object->{'content'}};
 	$object->{'content'} = [];
 	for my $i (0..$#children) {
-		my $whitespace = bless ({ value => "\n".($flags->{'indentstring'}x($tabs+1)), parent => $object }, 'XML::MyXML::Object');
+		my $whitespace = bless ({ value => "\n".($indentstring x ($tabs+1)), parent => $object }, 'XML::MyXML::Object');
 		weaken( $whitespace->{'parent'} );
 		push @{$object->{'content'}}, $whitespace;
 		push @{$object->{'content'}}, $children[$i];
 	}
-	my $whitespace = bless ({ value => "\n".($flags->{'indentstring'}x($tabs)), parent => $object }, 'XML::MyXML::Object');
+	my $whitespace = bless ({ value => "\n".($indentstring x ($tabs)), parent => $object }, 'XML::MyXML::Object');
 	weaken( $whitespace->{'parent'} );
 	push @{$object->{'content'}}, $whitespace;
 
@@ -378,7 +382,7 @@ Produces a raw XML string from either an array reference, a hash reference or a 
 
 All the strings in C<$simple_array_ref> need to contain characters, rather than bytes/octets. The XML output of this function however will be a UTF-8 encoded string (i.e. will contain bytes/octets).
 
-Optional flags: C<complete>, C<tidy>, C<indentstring>, C<save>, C<xslt>
+Optional flags: C<complete>, C<tidy>, C<indentstring>, C<save>, C<xslt>, C<bytes>
 
 =cut
 
@@ -413,7 +417,8 @@ sub simple_to_xml {
 		close $fh;
 	}
 
-	return encode_utf8( $xml );
+	$xml = encode_utf8($xml)	if $flags->{bytes};
+	return $xml;
 }
 
 
@@ -483,7 +488,7 @@ Since the object created is a hashref, duplicate keys will be discarded. WARNING
 
 All strings contained in the output simple structure, will contain characters rather than octets/bytes.
 
-Optional flags: C<internal>, C<strip>, C<file>, C<strip_ns>, C<arrayref>
+Optional flags: C<internal>, C<strip>, C<file>, C<strip_ns>, C<arrayref>, C<bytes>
 
 =cut
 
@@ -540,7 +545,7 @@ sub _objectarray_to_simple_hashref {
 
 sub _objectarray_to_simple_arrayref {
 	my $object = shift;
-	my $flags = (@_ and defined $_[0]) ? $_[0] : {};
+	my $flags = shift || {};
 
 	if (! defined $object) { return undef; }
 
@@ -571,13 +576,13 @@ sub _objectarray_to_simple_arrayref {
 
 Returns true if the $raw_xml string is valid XML (valid enough to be used by this module), and false otherwise.
 
-Optional flags: C<file>
+Optional flags: C<file>, C<bytes>
 
 =cut
 
 sub check_xml {
 	my $xml = shift;
-	my $flags = (@_ and defined $_[0]) ? $_[0] : {};
+	my $flags = shift || {};
 
 	my $obj = eval { xml_to_object($xml, $flags) };
 	return ! $@;
@@ -645,11 +650,7 @@ sub children {
 	($tag, my $attrs) = _parse_description($tag);
 	my $desc = { tag => $tag, attrs => $attrs };
 
-	my @results;
-	CHILD: foreach my $child (@all_children) {
-		$child->cmp_element($desc)		or next;
-		push @results, $child;
-	}
+	my @results = grep $_->cmp_element($desc), @all_children;
 
 	return @results;
 }
@@ -844,7 +845,7 @@ Optional flags: C<internal>, C<strip>, C<strip_ns>, C<arrayref>
 
 sub simplify {
 	my $self = shift;
-	my $flags = (@_ and defined $_[0]) ? $_[0] : {};
+	my $flags = shift || {};
 
 	my $simple = XML::MyXML::_objectarray_to_simple([$self], $flags);
 	if (! $flags->{'internal'}) {
@@ -862,7 +863,7 @@ sub simplify {
 
 Returns the XML string of the object, just like calling C<object_to_xml( $obj )>
 
-Optional flags: C<complete>, C<tidy>, C<indentstring>, C<save>
+Optional flags: C<complete>, C<tidy>, C<indentstring>, C<save>, C<bytes>
 
 =cut
 
@@ -871,14 +872,16 @@ sub to_xml {
 	my $flags = shift || {};
 
 	my $decl = $flags->{'complete'} ? '<?xml version="1.1" encoding="UTF-8" standalone="yes" ?>'."\n" : '';
-	my $xml = encode_utf8( XML::MyXML::_objectarray_to_xml([$self]) );
-	if ($flags->{'tidy'}) { $xml = XML::MyXML::tidy_xml($xml, { %$flags, complete => 0, save => undef }); }
+	my $xml = XML::MyXML::_objectarray_to_xml([$self]);
+	if ($flags->{'tidy'}) { $xml = XML::MyXML::tidy_xml($xml, { %$flags, bytes => 0, complete => 0, save => undef }); }
 	$xml = $decl . $xml;
 	if (defined $flags->{'save'}) {
 		open my $fh, '>', $flags->{'save'} or croak "Error: Couldn't open file '$flags->{'save'}' for writing: $!";
+		binmode $fh, ':encoding(UTF-8)';
 		print $fh $xml;
 		close $fh;
 	}
+	$xml = encode_utf8($xml)	if $flags->{bytes};
 	return $xml;
 }
 
@@ -886,7 +889,7 @@ sub to_xml {
 
 Returns the XML string of the object in tidy form, just like calling C<tidy_xml( object_to_xml( $obj ) )>
 
-Optional flags: C<complete>, C<indentstring>, C<save>
+Optional flags: C<complete>, C<indentstring>, C<save>, C<bytes>
 
 =cut
 
@@ -894,8 +897,7 @@ sub to_tidy_xml {
 	my $self = shift;
 	my $flags = shift || {};
 
-	$flags->{'tidy'} = 1;
-	return $self->to_xml( $flags );
+	return $self->to_xml({ %$flags, tidy => 1 });
 }
 
 
