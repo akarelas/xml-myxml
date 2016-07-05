@@ -1,5 +1,8 @@
 Revision history for XML-MyXML
 
+0.9401  2016-07-06
+        Fixed leftover mistakes in the documentation
+
 0.9400  2016-07-06
         BREAKING CHANGE: XML documents parsed or produced by this module are character strings, rather than
             bytes/octets. This is in order to follow the convention explained by Ricardo Signes here:

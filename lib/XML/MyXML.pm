@@ -380,7 +380,7 @@ Produces a raw XML string from either an array reference, a hash reference or a 
     [ thing => [ name => 'John', location => [ city => 'New York', country => 'U.S.A.' ] ] ]
     { thing => { name => 'John', location => [ city => 'New York', city => 'Boston', country => 'U.S.A.' ] } }
 
-All the strings in C<$simple_array_ref> need to contain characters, rather than bytes/octets. The XML output of this function however will be a UTF-8 encoded string (i.e. will contain bytes/octets).
+All the strings in C<$simple_array_ref> need to contain characters, rather than bytes/octets. The C<bytes> optional flag only affects the produced XML string.
 
 Optional flags: C<complete>, C<tidy>, C<indentstring>, C<save>, C<xslt>, C<bytes>
 
@@ -486,7 +486,7 @@ Produces a very simple hash object from the raw XML string provided. An example 
 
 Since the object created is a hashref, duplicate keys will be discarded. WARNING: This function only works on very simple XML strings, i.e. children of an element may not consist of both text and elements (child elements will be discarded in that case)
 
-All strings contained in the output simple structure, will contain characters rather than octets/bytes.
+All strings contained in the output simple structure, will always contain characters rather than octets/bytes, regardless of the C<bytes> optional flag.
 
 Optional flags: C<internal>, C<strip>, C<file>, C<strip_ns>, C<arrayref>, C<bytes>
 
