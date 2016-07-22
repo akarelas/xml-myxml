@@ -177,7 +177,7 @@ sub xml_to_object {
 	my $xml = shift;
 	my $flags = shift || {};
 
-	if ($flags->{'file'}) {
+	if ($flags->{file}) {
 		open my $fh, '<', $xml	or croak "Error: The file '$xml' could not be opened for reading: $!";
 		$xml = join '', <$fh>;
 		close $fh;
@@ -233,12 +233,12 @@ sub xml_to_object {
 		} elsif ($el =~ /\A<\/[^\s>]+>\z/) {
 			my ($element) = $el =~ /\A<\/(\S+)>\z/g;
 			if (! length($element)) { croak encode_utf8("Error: Strange element: '$el'"); }
-			if ($stack[-1]{'element'} ne $element) { croak encode_utf8("Error: Incompatible stack element: stack='".$stack[-1]{'element'}."' element='$el'"); }
+			if ($stack[-1]{element} ne $element) { croak encode_utf8("Error: Incompatible stack element: stack='".$stack[-1]{element}."' element='$el'"); }
 			my $stackentry = pop @stack;
-			if ($#{$stackentry->{'content'}} == -1) {
-				delete $stackentry->{'content'};
+			if ($#{$stackentry->{content}} == -1) {
+				delete $stackentry->{content};
 			}
-			$pointer = $stackentry->{'parent'};
+			$pointer = $stackentry->{parent};
 		} elsif ($el =~ /\A<[^>]+\/>\z/) {
 			my ($element) = $el =~ /\A<([^\s>\/]+)/g;
 			if (! length($element)) { croak encode_utf8("Error: Strange element: '$el'"); }
@@ -254,9 +254,9 @@ sub xml_to_object {
 				$attr{$name} = _decode($value, $entities);
 			}
 			my $entry = { element => $element, attrs => \%attr, parent => $pointer };
-			weaken( $entry->{'parent'} );
+			weaken( $entry->{parent} );
 			bless $entry, 'XML::MyXML::Object';
-			push @{$pointer->{'content'}}, $entry;
+			push @{$pointer->{content}}, $entry;
 		} elsif ($el =~ /\A<[^\s>\/][^>]*>\z/) {
 			my ($element) = $el =~ /\A<([^\s>]+)/g;
 			if (! length($element)) { croak encode_utf8("Error: Strange element: '$el'"); }
@@ -272,23 +272,23 @@ sub xml_to_object {
 				$attr{$name} = _decode($value, $entities);
 			}
 			my $entry = { element => $element, attrs => \%attr, content => [], parent => $pointer };
-			weaken( $entry->{'parent'} );
+			weaken( $entry->{parent} );
 			bless $entry, 'XML::MyXML::Object';
 			push @stack, $entry;
-			push @{$pointer->{'content'}}, $entry;
+			push @{$pointer->{content}}, $entry;
 			$pointer = $entry;
 		} elsif ($el =~ /\A[^<>]*\z/) {
 			my $entry = { value => _decode($el, $entities), parent => $pointer };
-			weaken( $entry->{'parent'} );
+			weaken( $entry->{parent} );
 			bless $entry, 'XML::MyXML::Object';
-			push @{$pointer->{'content'}}, $entry;
+			push @{$pointer->{content}}, $entry;
 		} else {
 			croak encode_utf8("Error: Strange element: '$el'");
 		}
 	}
-	if (@stack) { croak encode_utf8("Error: The <$stack[-1]{'element'}> element has not been closed in XML"); }
-	$object = $object->{'content'}[0];
-	$object->{'parent'} = undef;
+	if (@stack) { croak encode_utf8("Error: The <$stack[-1]{element}> element has not been closed in XML"); }
+	$object = $object->{content}[0];
+	$object->{parent} = undef;
 	return $object;
 }
 
@@ -297,19 +297,19 @@ sub _objectarray_to_xml {
 
 	my $xml = '';
 	foreach my $stuff (@$object) {
-		if (! defined $stuff->{'element'} and defined $stuff->{'value'}) {
-			$xml .= _encode($stuff->{'value'});
+		if (! defined $stuff->{element} and defined $stuff->{value}) {
+			$xml .= _encode($stuff->{value});
 		} else {
-			$xml .= "<".$stuff->{'element'};
-			foreach my $attrname (keys %{$stuff->{'attrs'}}) {
-				$xml .= " ".$attrname.'="'._encode($stuff->{'attrs'}{$attrname}).'"';
+			$xml .= "<".$stuff->{element};
+			foreach my $attrname (keys %{$stuff->{attrs}}) {
+				$xml .= " ".$attrname.'="'._encode($stuff->{attrs}{$attrname}).'"';
 			}
-			if (! defined $stuff->{'content'}) {
+			if (! defined $stuff->{content}) {
 				$xml .= "/>"
 			} else {
 				$xml .= ">";
-				$xml .= _objectarray_to_xml($stuff->{'content'});
-				$xml .= "</".$stuff->{'element'}.">";
+				$xml .= _objectarray_to_xml($stuff->{content});
+				$xml .= "</".$stuff->{element}.">";
 			}
 		}
 	}
@@ -338,13 +338,13 @@ sub _tidy_object {
 
 	my $indentstring = exists $flags->{indentstring} ? $flags->{indentstring} : "\t";
 
-	if (! defined $object->{'content'} or ! @{$object->{'content'}}) { return; }
+	if (! defined $object->{content} or ! @{$object->{content}}) { return; }
 	my $hastext;
-	my @children = @{$object->{'content'}};
+	my @children = @{$object->{content}};
 	foreach my $i (0..$#children) {
 		my $child = $children[$i];
-		if (defined $child->{'value'}) {
-			if ($child->{'value'} =~ /\S/) {
+		if (defined $child->{value}) {
+			if ($child->{value} =~ /\S/) {
 				$hastext = 1;
 				last;
 			}
@@ -352,22 +352,22 @@ sub _tidy_object {
 	}
 	if ($hastext) { return; }
 
-	@{$object->{'content'}} = grep { ! defined $_->{'value'} or $_->{'value'} !~ /\A\s*\z/ } @{$object->{'content'}};
+	@{$object->{content}} = grep { ! defined $_->{value} or $_->{value} !~ /\A\s*\z/ } @{$object->{content}};
 
-	@children = @{$object->{'content'}};
-	$object->{'content'} = [];
+	@children = @{$object->{content}};
+	$object->{content} = [];
 	for my $i (0..$#children) {
 		my $whitespace = bless ({ value => "\n".($indentstring x ($tabs+1)), parent => $object }, 'XML::MyXML::Object');
-		weaken( $whitespace->{'parent'} );
-		push @{$object->{'content'}}, $whitespace;
-		push @{$object->{'content'}}, $children[$i];
+		weaken( $whitespace->{parent} );
+		push @{$object->{content}}, $whitespace;
+		push @{$object->{content}}, $children[$i];
 	}
 	my $whitespace = bless ({ value => "\n".($indentstring x ($tabs)), parent => $object }, 'XML::MyXML::Object');
-	weaken( $whitespace->{'parent'} );
-	push @{$object->{'content'}}, $whitespace;
+	weaken( $whitespace->{parent} );
+	push @{$object->{content}}, $whitespace;
 
-	for my $i (0..$#{$object->{'content'}}) {
-		_tidy_object($object->{'content'}[$i], $tabs+1, $flags);
+	for my $i (0..$#{$object->{content}}) {
+		_tidy_object($object->{content}[$i], $tabs+1, $flags);
 	}
 }
 
@@ -405,13 +405,13 @@ sub simple_to_xml {
 	} else {
 		$xml .= "<$key>"._arrayref_to_xml($value, $flags)."</$tag>";
 	}
-	if ($flags->{'tidy'}) { $xml = tidy_xml($xml, { $flags->{'indentstring'} ? (indentstring => $flags->{'indentstring'}) : () }); }
-	my $decl = $flags->{'complete'} ? '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'."\n" : '';
-	$decl .= "<?xml-stylesheet type=\"text/xsl\" href=\"$flags->{'xslt'}\"?>\n" if $flags->{'xslt'};
+	if ($flags->{tidy}) { $xml = tidy_xml($xml, { $flags->{indentstring} ? (indentstring => $flags->{indentstring}) : () }); }
+	my $decl = $flags->{complete} ? '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'."\n" : '';
+	$decl .= "<?xml-stylesheet type=\"text/xsl\" href=\"$flags->{xslt}\"?>\n" if $flags->{xslt};
 	$xml = $decl . $xml;
 
-	if (defined $flags->{'save'}) {
-		open my $fh, '>', $flags->{'save'} or croak "Error: Couldn't open file '$flags->{'save'}' for writing: $!";
+	if (defined $flags->{save}) {
+		open my $fh, '>', $flags->{save} or croak "Error: Couldn't open file '$flags->{save}' for writing: $!";
 		binmode $fh, ':encoding(UTF-8)';
 		print $fh $xml;
 		close $fh;
@@ -431,13 +431,10 @@ sub _arrayref_to_xml {
 	if (ref $arref eq 'HASH') { return _hashref_to_xml($arref, $flags); }
 
 	foreach (my $i = 0; $i <= $#$arref; ) {
-	#while (@$arref) {
 		my $key = $arref->[$i++];
-		#my $key = shift @$arref;
 		my ($tag) = $key =~ /\A(\S+)/g;
 		croak encode_utf8("Error: Strange key: $key") if ! defined $tag;
 		my $value = $arref->[$i++];
-		#my $value = shift @$arref;
 
 		if ($key eq '!as_is') {
 			$xml .= $value if check_xml($value);
@@ -509,7 +506,7 @@ sub _objectarray_to_simple {
 
 	if (! defined $object) { return undef; }
 
-	if ($flags->{'arrayref'}) {
+	if ($flags->{arrayref}) {
 		return _objectarray_to_simple_arrayref($object, $flags);
 	} else {
 		return _objectarray_to_simple_hashref($object, $flags);
@@ -525,13 +522,13 @@ sub _objectarray_to_simple_hashref {
 	my $hashref = {};
 
 	foreach my $stuff (@$object) {
-		if (defined $stuff->{'element'}) {
-			my $key = $stuff->{'element'};
-			if ($flags->{'strip_ns'}) { $key = _strip_ns($key); }
-			$hashref->{ $key } = _objectarray_to_simple($stuff->{'content'}, $flags);
-		} elsif (defined $stuff->{'value'}) {
-			my $value = $stuff->{'value'};
-			if ($flags->{'strip'}) { $value = _strip($value); }
+		if (defined $stuff->{element}) {
+			my $key = $stuff->{element};
+			if ($flags->{strip_ns}) { $key = _strip_ns($key); }
+			$hashref->{ $key } = _objectarray_to_simple($stuff->{content}, $flags);
+		} elsif (defined $stuff->{value}) {
+			my $value = $stuff->{value};
+			if ($flags->{strip}) { $value = _strip($value); }
 			return $value if $value =~ /\S/;
 		}
 	}
@@ -552,14 +549,13 @@ sub _objectarray_to_simple_arrayref {
 	my $arrayref = [];
 
 	foreach my $stuff (@$object) {
-		if (defined $stuff->{'element'}) {
-			my $key = $stuff->{'element'};
-			if ($flags->{'strip_ns'}) { $key = _strip_ns($key); }
-			push @$arrayref, ( $key, _objectarray_to_simple($stuff->{'content'}, $flags) );
-			#$hashref->{ $key } = _objectarray_to_simple($stuff->{'content'}, $flags);
-		} elsif (defined $stuff->{'value'}) {
-			my $value = $stuff->{'value'};
-			if ($flags->{'strip'}) { $value = _strip($value); }
+		if (defined $stuff->{element}) {
+			my $key = $stuff->{element};
+			if ($flags->{strip_ns}) { $key = _strip_ns($key); }
+			push @$arrayref, ( $key, _objectarray_to_simple($stuff->{content}, $flags) );
+		} elsif (defined $stuff->{value}) {
+			my $value = $stuff->{value};
+			if ($flags->{strip}) { $value = _strip($value); }
 			return $value if $value =~ /\S/;
 		}
 	}
@@ -628,7 +624,7 @@ sub cmp_element {
 			? @$desc{qw/ tag attrs /}
 			: _parse_description($desc);
 
-	! length $tag or $self->{'element'} =~ /(\A|\:)\Q$tag\E\z/	or return 0;
+	! length $tag or $self->{element} =~ /(\A|\:)\Q$tag\E\z/	or return 0;
 	foreach my $attr (keys %$attrs) {
 		my $val = $self->attr($attr);
 		defined $val											or return 0;
@@ -644,7 +640,7 @@ sub children {
 
 	$tag = '' if ! defined $tag;
 
-	my @all_children = grep { defined $_->{'element'} } @{$self->{'content'}};
+	my @all_children = grep { defined $_->{element} } @{$self->{content}};
 	length $tag		or return @all_children;
 
 	($tag, my $attrs) = _parse_description($tag);
@@ -754,9 +750,9 @@ sub value {
 	my $self = shift;
 	my $flags = shift || {};
 
-	if ($self->{'content'} and $self->{'content'}[0]) {
-		my $value = $self->{'content'}[0]{'value'};
-		if ($flags->{'strip'}) { $value = XML::MyXML::_strip($value); }
+	if ($self->{content} and $self->{content}[0]) {
+		my $value = $self->{content}[0]{value};
+		if ($flags->{strip}) { $value = XML::MyXML::_strip($value); }
 		return $value;
 	} else {
 		return undef;
@@ -792,18 +788,18 @@ sub attr {
 	if (defined $attrname) {
 		if ($must_set) {
 			if (defined ($set_to)) {
-				$self->{'attrs'}{$attrname} = $set_to;
+				$self->{attrs}{$attrname} = $set_to;
 				return $set_to;
 			} else {
-				delete $self->{'attrs'}{$attrname};
+				delete $self->{attrs}{$attrname};
 				return;
 			}
 		} else {
-			my $attrvalue = $self->{'attrs'}->{$attrname};
+			my $attrvalue = $self->{attrs}->{$attrname};
 			return $attrvalue;
 		}
 	} else {
-		return %{$self->{'attrs'}};
+		return %{$self->{attrs}};
 	}
 }
 
@@ -820,9 +816,9 @@ sub tag {
 	my $self = shift;
 	my $flags = shift || {};
 
-	my $tag = $self->{'element'};
+	my $tag = $self->{element};
 	if (defined $tag) {
-		$tag =~ s/\A.*\://	if $flags->{'strip_ns'};
+		$tag =~ s/\A.*\://	if $flags->{strip_ns};
 		return $tag;
 	} else {
 		return undef;
@@ -840,7 +836,7 @@ Optional flags: none
 sub parent {
 	my $self = shift;
 
-	return $self->{'parent'};
+	return $self->{parent};
 }
 
 =head2 $obj->simplify
@@ -856,7 +852,7 @@ sub simplify {
 	my $flags = shift || {};
 
 	my $simple = XML::MyXML::_objectarray_to_simple([$self], $flags);
-	if (! $flags->{'internal'}) {
+	if (! $flags->{internal}) {
 		return $simple;
 	} else {
 		if (ref $simple eq 'HASH') {
@@ -879,12 +875,12 @@ sub to_xml {
 	my $self = shift;
 	my $flags = shift || {};
 
-	my $decl = $flags->{'complete'} ? '<?xml version="1.1" encoding="UTF-8" standalone="yes" ?>'."\n" : '';
+	my $decl = $flags->{complete} ? '<?xml version="1.1" encoding="UTF-8" standalone="yes" ?>'."\n" : '';
 	my $xml = XML::MyXML::_objectarray_to_xml([$self]);
-	if ($flags->{'tidy'}) { $xml = XML::MyXML::tidy_xml($xml, { %$flags, bytes => 0, complete => 0, save => undef }); }
+	if ($flags->{tidy}) { $xml = XML::MyXML::tidy_xml($xml, { %$flags, bytes => 0, complete => 0, save => undef }); }
 	$xml = $decl . $xml;
-	if (defined $flags->{'save'}) {
-		open my $fh, '>', $flags->{'save'} or croak "Error: Couldn't open file '$flags->{'save'}' for writing: $!";
+	if (defined $flags->{save}) {
+		open my $fh, '>', $flags->{save} or croak "Error: Couldn't open file '$flags->{save}' for writing: $!";
 		binmode $fh, ':encoding(UTF-8)';
 		print $fh $xml;
 		close $fh;
