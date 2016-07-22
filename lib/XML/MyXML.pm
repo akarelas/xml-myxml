@@ -119,9 +119,9 @@ sub _decode {
 		if (exists $conv{$e}) { next; }
 		if (exists $replace{$e}) {
 			$conv{$e} = $replace{$e};
-		} elsif ($e =~ /^&#x([0-9a-fA-F]+);$/) {
+		} elsif ($e =~ /\A&#x([0-9a-fA-F]+);\z/) {
 			$conv{$e} = chr(hex($1));
-		} elsif ($e =~ /^&#([0-9]+);$/) {
+		} elsif ($e =~ /\A&#([0-9]+);\z/) {
 			$conv{$e} = chr($1);
 		}
 	}
@@ -134,14 +134,14 @@ sub _strip {
 	my $string = shift;
 
 	# NOTE: Replace this with the 'r' flag of the substitution operator
-	return defined $string ? ($string =~ /^\s*(.*?)\s*$/s)[0] : $string;
+	return defined $string ? ($string =~ /\A\s*(.*?)\s*\z/s)[0] : $string;
 }
 
 sub _strip_ns {
 	my $string = shift;
 
 	# NOTE: Replace this with the 'r' flag of the substitution operator
-	return defined $string ? ($string =~ /^(?:.+\:)?(.*)$/s)[0] : $string;
+	return defined $string ? ($string =~ /\A(?:.+\:)?(.*)\z/s)[0] : $string;
 }
 
 =head2 tidy_xml($raw_xml)
@@ -202,13 +202,13 @@ sub xml_to_object {
 	{
 		my $init_ws = 1;
 		foreach my $el (@els) {
-			if ($el =~ /^<!--/) {
-				if ($el !~ /-->$/) { croak encode_utf8("Error: unclosed XML comment block - '$el'"); }
+			if ($el =~ /\A<!--/) {
+				if ($el !~ /-->\z/) { croak encode_utf8("Error: unclosed XML comment block - '$el'"); }
 				undef $el;
-			} elsif ($el =~ /^<\?/) { # like <?xml?> or <?target?>
-				if ($el !~ /\?>$/) { croak encode_utf8("Error: Erroneous special markup - '$el'"); }
+			} elsif ($el =~ /\A<\?/) { # like <?xml?> or <?target?>
+				if ($el !~ /\?>\z/) { croak encode_utf8("Error: Erroneous special markup - '$el'"); }
 				undef $el;
-			} elsif (my ($entname, undef, $entvalue) = $el =~ /^<!ENTITY\s+(\S+)\s+(['"])(.*?)\2\s*>$/g) {
+			} elsif (my ($entname, undef, $entvalue) = $el =~ /\A<!ENTITY\s+(\S+)\s+(['"])(.*?)\2\s*>\z/g) {
 				$entities->{"&$entname;"} = _decode($entvalue);
 				undef $el;
 			} elsif ($el =~ /<!/) { # like <!DOCTYPE> or <!ELEMENT> or <!ATTLIST>
@@ -228,10 +228,10 @@ sub xml_to_object {
 	my $object = bless ({ content => [] }, 'XML::MyXML::Object');
 	my $pointer = $object;
 	foreach my $el (@els) {
-		if ($el =~ /^<\/?>$/) {
+		if ($el =~ /\A<\/?>\z/) {
 			croak encode_utf8("Error: Strange element: '$el'");
-		} elsif ($el =~ /^<\/[^\s>]+>$/) {
-			my ($element) = $el =~ /^<\/(\S+)>$/g;
+		} elsif ($el =~ /\A<\/[^\s>]+>\z/) {
+			my ($element) = $el =~ /\A<\/(\S+)>\z/g;
 			if (! length($element)) { croak encode_utf8("Error: Strange element: '$el'"); }
 			if ($stack[-1]{'element'} ne $element) { croak encode_utf8("Error: Incompatible stack element: stack='".$stack[-1]{'element'}."' element='$el'"); }
 			my $stackentry = pop @stack;
@@ -239,17 +239,17 @@ sub xml_to_object {
 				delete $stackentry->{'content'};
 			}
 			$pointer = $stackentry->{'parent'};
-		} elsif ($el =~ /^<[^>]+\/>$/) {
-			my ($element) = $el =~ /^<([^\s>\/]+)/g;
+		} elsif ($el =~ /\A<[^>]+\/>\z/) {
+			my ($element) = $el =~ /\A<([^\s>\/]+)/g;
 			if (! length($element)) { croak encode_utf8("Error: Strange element: '$el'"); }
-			$el =~ s/^<\Q$element\E//;
-			$el =~ s/\/>$//;
+			$el =~ s/\A<\Q$element\E//;
+			$el =~ s/\/>\z//;
 			my @attrs = $el =~ /\s+(\S+=(['"]).*?\2)/g;
 			my $i = 1;
 			@attrs = grep {$i++ % 2} @attrs;
 			my %attr;
 			foreach my $attr (@attrs) {
-				my ($name, undef, $value) = $attr =~ /^(\S+?)=(['"])(.*?)\2$/g;
+				my ($name, undef, $value) = $attr =~ /\A(\S+?)=(['"])(.*?)\2\z/g;
 				if (! length($name) or ! defined($value)) { croak encode_utf8("Error: Strange attribute: '$attr'"); }
 				$attr{$name} = _decode($value, $entities);
 			}
@@ -257,17 +257,17 @@ sub xml_to_object {
 			weaken( $entry->{'parent'} );
 			bless $entry, 'XML::MyXML::Object';
 			push @{$pointer->{'content'}}, $entry;
-		} elsif ($el =~ /^<[^\s>\/][^>]*>$/) {
-			my ($element) = $el =~ /^<([^\s>]+)/g;
+		} elsif ($el =~ /\A<[^\s>\/][^>]*>\z/) {
+			my ($element) = $el =~ /\A<([^\s>]+)/g;
 			if (! length($element)) { croak encode_utf8("Error: Strange element: '$el'"); }
-			$el =~ s/^<\Q$element\E//;
-			$el =~ s/>$//;
+			$el =~ s/\A<\Q$element\E//;
+			$el =~ s/>\z//;
 			my @attrs = $el =~ /\s+(\S+=(['"]).*?\2)/g;
 			my $i = 1;
 			@attrs = grep {$i++ % 2} @attrs;
 			my %attr;
 			foreach my $attr (@attrs) {
-				my ($name, undef, $value) = $attr =~ /^(\S+?)=(['"])(.*?)\2$/g;
+				my ($name, undef, $value) = $attr =~ /\A(\S+?)=(['"])(.*?)\2\z/g;
 				if (! length($name) or ! defined($value)) { croak encode_utf8("Error: Strange attribute: '$attr'"); }
 				$attr{$name} = _decode($value, $entities);
 			}
@@ -277,7 +277,7 @@ sub xml_to_object {
 			push @stack, $entry;
 			push @{$pointer->{'content'}}, $entry;
 			$pointer = $entry;
-		} elsif ($el =~ /^[^<>]*$/) {
+		} elsif ($el =~ /\A[^<>]*\z/) {
 			my $entry = { value => _decode($el, $entities), parent => $pointer };
 			weaken( $entry->{'parent'} );
 			bless $entry, 'XML::MyXML::Object';
@@ -352,7 +352,7 @@ sub _tidy_object {
 	}
 	if ($hastext) { return; }
 
-	@{$object->{'content'}} = grep { ! defined $_->{'value'} or $_->{'value'} !~ /^\s*$/ } @{$object->{'content'}};
+	@{$object->{'content'}} = grep { ! defined $_->{'value'} or $_->{'value'} !~ /\A\s*\z/ } @{$object->{'content'}};
 
 	@children = @{$object->{'content'}};
 	$object->{'content'} = [];
@@ -393,7 +393,7 @@ sub simple_to_xml {
 	my $xml = '';
 	my ($key, $value, @residue) = (ref $arref eq 'HASH') ? %$arref : @$arref;
 	if (@residue) { croak "Error: the provided simple ref contains more than 1 top element"; }
-	my ($tag) = $key =~ /^(\S+)/g;
+	my ($tag) = $key =~ /\A(\S+)/g;
 	croak encode_utf8("Error: Strange key: $key") if ! defined $tag;
 
 	if (! ref $value) {
@@ -434,7 +434,7 @@ sub _arrayref_to_xml {
 	#while (@$arref) {
 		my $key = $arref->[$i++];
 		#my $key = shift @$arref;
-		my ($tag) = $key =~ /^(\S+)/g;
+		my ($tag) = $key =~ /\A(\S+)/g;
 		croak encode_utf8("Error: Strange key: $key") if ! defined $tag;
 		my $value = $arref->[$i++];
 		#my $value = shift @$arref;
@@ -462,7 +462,7 @@ sub _hashref_to_xml {
 	my $xml = '';
 
 	while (my ($key, $value) = each %$hashref) {
-		my ($tag) = $key =~ /^(\S+)/g;
+		my ($tag) = $key =~ /\A(\S+)/g;
 		croak encode_utf8("Error: Strange key: $key") if ! defined $tag;
 
 		if ($key eq '!as_is') {
@@ -611,7 +611,7 @@ sub new {
 sub _parse_description {
 	my ($desc) = @_;
 
-	my ($tag, $attrs_str) = $desc =~ /^([^\[]*)(.*)$/g;
+	my ($tag, $attrs_str) = $desc =~ /\A([^\[]*)(.*)\z/g;
 	my %attrs = $attrs_str =~ /\[([^\]=]+)(?:=(\"[^"]*\"|[^"\]]*))?\]/g;
 	foreach my $value (values %attrs) {
 		$value =~ s/\A\"//;
@@ -628,7 +628,7 @@ sub cmp_element {
 			? @$desc{qw/ tag attrs /}
 			: _parse_description($desc);
 
-	! length $tag or $self->{'element'} =~ /(^|\:)\Q$tag\E$/	or return 0;
+	! length $tag or $self->{'element'} =~ /(\A|\:)\Q$tag\E\z/	or return 0;
 	foreach my $attr (keys %$attrs) {
 		my $val = $self->attr($attr);
 		defined $val											or return 0;
@@ -719,10 +719,10 @@ sub path {
 
 	my @path;
 	my $orig_path = $path;
-	my $start_root = $path =~ m!^/!;
+	my $start_root = $path =~ m!\A/!;
 	$path = "/" . $path		unless $start_root;
 	while (length $path) {
-		my $success = $path =~ s!^/((?:[^/\[]*)?(?:\[[^\]=]+(?:=(?:\"[^"]*\"|[^"\]]*))?\])*)!!;
+		my $success = $path =~ s!\A/((?:[^/\[]*)?(?:\[[^\]=]+(?:=(?:\"[^"]*\"|[^"\]]*))?\])*)!!;
 		my $seg = $1;
 		if ($success) {
 			push @path, $seg;
@@ -822,7 +822,7 @@ sub tag {
 
 	my $tag = $self->{'element'};
 	if (defined $tag) {
-		$tag =~ s/^.*\://	if $flags->{'strip_ns'};
+		$tag =~ s/\A.*\://	if $flags->{'strip_ns'};
 		return $tag;
 	} else {
 		return undef;
