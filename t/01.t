@@ -17,7 +17,7 @@ is_deeply($simple, {
 		eur => 10,
 		usd => 8,
 	}
-}, 'xml_to_simple, tagname with symbols ok');
+}, 'xml_to_simple, tagname with symbols');
 
 $xml = "<item><name>Τραπέζι</name><price><usd>10.00</usd><eur>8.50</eur></price></item>";
 $simple = xml_to_simple($xml);
@@ -30,11 +30,11 @@ is_deeply($simple, {
 			eur => '8.50',
 		},
 	},
-}, 'xml_to_simple ok');
+}, 'xml_to_simple');
 
 my $obj = xml_to_object($xml);
-is($obj->path('price/eur')->value, '8.50', 'xml_to_object & path & value ok');
-is($obj->path('name')->value, 'Τραπέζι', 'value wide-characters ok');
+is($obj->path('price/eur')->value, '8.50', 'xml_to_object & path & value');
+is($obj->path('name')->value, 'Τραπέζι', 'value wide-characters');
 
 $simple = {
 	item => [
@@ -47,7 +47,7 @@ $simple = {
 };
 
 my $xml2 = simple_to_xml($simple);
-is($xml2, $xml, 'simple_to_xml ok');
+is($xml2, $xml, 'simple_to_xml');
 
 my $tidy_xml = $obj->to_xml({ tidy => 1, indentstring => '  ' });
 my $correct_tidy_xml = <<'EOB';
@@ -78,47 +78,47 @@ is_deeply($test_smp, {
 			eur => '8.50',
 		},
 	},
-}, 'simple_to_xml (save) and xml_to_simple (file) ok');
+}, 'simple_to_xml (save) and xml_to_simple (file)');
 
 # TEST NO-STRIPNS TAG
 $xml = "<school:μαθητής>Peter</school:μαθητής>";
 $obj = xml_to_object($xml);
-is($obj->tag, 'school:μαθητής', 'tag not stripped_ns ok 1');
-is($obj->tag({ strip_ns => 0 }), 'school:μαθητής', 'tag not stripped_ns ok 2');
-is($obj->tag({ strip_ns => 1 }), 'μαθητής', 'tag stripped_ns ok');
+is($obj->tag, 'school:μαθητής', 'tag not stripped_ns 1');
+is($obj->tag({ strip_ns => 0 }), 'school:μαθητής', 'tag not stripped_ns 2');
+is($obj->tag({ strip_ns => 1 }), 'μαθητής', 'tag stripped_ns');
 
 # TEST STRIP_NS XML_TO_SIMPLE
 $simple = xml_to_simple($xml, { strip_ns => 1 });
 is_deeply($simple, {
 	'μαθητής' => 'Peter',
-}, 'xml_to_simple with strip_ns ok');
+}, 'xml_to_simple with strip_ns');
 $simple = xml_to_simple($xml);
 is_deeply($simple, {
 	'school:μαθητής' => 'Peter',
-}, 'xml_to_simple without strip_ns ok');
+}, 'xml_to_simple without strip_ns');
 
 # TEST QUICK-CLOSE
 $simple = { person => { name => undef } };
-is(simple_to_xml($simple), '<person><name/></person>', 'quick close worked ok 1');
+is(simple_to_xml($simple), '<person><name/></person>', 'quick close worked 1');
 $simple = { person => { name => '' } };
-is(simple_to_xml($simple), '<person><name/></person>', 'quick close worked ok 2');
+is(simple_to_xml($simple), '<person><name/></person>', 'quick close worked 2');
 $simple = { person => { name => 'Alex' } };
-is(simple_to_xml($simple), '<person><name>Alex</name></person>', 'slow close worked ok');
+is(simple_to_xml($simple), '<person><name>Alex</name></person>', 'slow close worked');
 
 # TEST VIEW/CHANGE ATTRS
 note 'test view/change attrs';
 $xml = '<people><person όνομα="γιώργος"><spouse>Maria</spouse></person></people>';
 $obj = xml_to_object($xml);
-is($obj->path('person')->attr('όνομα'), 'γιώργος', 'view ok 1');
-is($obj->path('person')->attr('name2'), undef, 'view ok 2');
+is($obj->path('person')->attr('όνομα'), 'γιώργος', 'view 1');
+is($obj->path('person')->attr('name2'), undef, 'view 2');
 $obj->path('person')->attr('όνομα', 'πέτρος');
-is($obj->to_xml, '<people><person όνομα="πέτρος"><spouse>Maria</spouse></person></people>', 'change ok 1');
+is($obj->to_xml, '<people><person όνομα="πέτρος"><spouse>Maria</spouse></person></people>', 'change 1');
 $obj->path('person')->attr('όνομα', undef);
-is($obj->to_xml, '<people><person><spouse>Maria</spouse></person></people>', 'change ok 2');
+is($obj->to_xml, '<people><person><spouse>Maria</spouse></person></people>', 'change 2');
 
 # XML_ESCAPE
 my $string = '<"άλ&εξ\'>';
-is(xml_escape($string), '&lt;&quot;άλ&amp;εξ&apos;&gt;', 'xml string escaped okay');
+is(xml_escape($string), '&lt;&quot;άλ&amp;εξ&apos;&gt;', 'xml string escaped');
 
 # WRONG UTF-8 PRODUCES ERROR
 $xml = '<person><name>Γιώργος</name></person>';
@@ -126,8 +126,8 @@ $obj = eval { xml_to_object($xml, { bytes => 1 }) };
 ok( $@, 'error occured because of wrong UTF-8' );
 
 # CHECK_XML
-ok( check_xml('<person/>'), 'check_xml ok 1' );
-ok( ! check_xml('<person>'), 'check_xml ok 2' );
+ok( check_xml('<person/>'), 'check_xml 1' );
+ok( ! check_xml('<person>'), 'check_xml 2' );
 
 # CHECK WEAKENED REFS
 note 'checking weakened refs';
@@ -137,8 +137,8 @@ my ($ch1, $ch2);
 	$obj = xml_to_object($xml);
 	($ch1, $ch2) = $obj->path('item');
 }
-is($ch1->to_xml, '<item>Table</item>', 'item1 ok');
-is($ch2->to_xml, '<item>Chair</item>', 'item2 ok');
+is($ch1->to_xml, '<item>Table</item>', 'item1');
+is($ch2->to_xml, '<item>Chair</item>', 'item2');
 
 # CHECK DOUBLE-DECODING BUG
 is(XML::MyXML::_decode('&#x26;#65;'), '&#65;', 'double-decoding not occurring');
@@ -156,7 +156,7 @@ $simple = xml_to_simple($xml, {internal => 1});
 is_deeply($simple, {
 	author => 'Alex',
 	copy => 'Alex',
-}, 'matching entities ok');
+}, 'matching entities');
 
 # PATH TESTS
 note 'path tests';
@@ -211,8 +211,8 @@ EOB
 				last => 'Doe',
 			},
 		},
-	], 'people1 ok');
-	is_deeply(\@people2, \@people1, 'people2 ok');
+	], 'people1');
+	is_deeply(\@people2, \@people1, 'people2');
 	@people1 = map $_->simplify, $obj->path('student[class=A]');
 	@people2 = map $_->simplify, $obj->path('/people/student[class=A]');
 	my @people3 = map $_->simplify, $obj->path('student[class="A"]');
@@ -225,13 +225,13 @@ EOB
 				},
 			},
 		},
-	], 'people1 ok 2');
-	is_deeply(\@people2, \@people1, 'people2 ok 2');
+	], 'people1 2');
+	is_deeply(\@people2, \@people1, 'people2 2');
 	is_deeply(\@people3, \@people1, 'quotes in attr values');
 	@people1 = map $_->simplify, $obj->path('/peoples/student');
 	is_deeply(\@people1, [], 'paths first element compares ok');
-	is($obj->path('/people')->tag, 'people', 'identity path ok');
-	is($obj->path('/')->tag, 'people', 'identity path ok 2');
+	is($obj->path('/people')->tag, 'people', 'identity path');
+	is($obj->path('/')->tag, 'people', 'identity path 2');
 	my @names_a = map $_->value, $obj->path('/people/[class=A]/name/first');
 	is_deeply(\@names_a, ['John', 'Mary', 'Peter'], 'multiple deep paths');
 	my $special = $obj->path('teacher[class="High ] C"]/name/first')->value;
