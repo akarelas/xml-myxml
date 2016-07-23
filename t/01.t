@@ -240,9 +240,7 @@ EOB
 
 # BYTES FLAG
 note 'bytes flag';
-$xml = <<EOB;
-<ατομο><ονομα>Γιώργος</ονομα></ατομο>
-EOB
+$xml = '<ατομο><ονομα>Γιώργος</ονομα></ατομο>';
 $obj = xml_to_object(encode_utf8($xml), { bytes => 1 });
 is($obj->path('/ατομο/ονομα')->value, 'Γιώργος', 'xml_to_object & path & value from UTF-8 doc');
 is($obj->to_xml, '<ατομο><ονομα>Γιώργος</ονομα></ατομο>', 'to_xml without bytes flag');
@@ -254,6 +252,13 @@ $tidy_xml = <<EOB;
 EOB
 is($obj->to_xml({bytes => 1, tidy => 1}), encode_utf8($tidy_xml), 'to_xml with bytes and tidy flags');
 is($obj->to_tidy_xml({bytes => 1}), encode_utf8($tidy_xml), 'to_tidy_xml with bytes flag');
+$simple = xml_to_simple(encode_utf8($xml), {bytes => 1});
+is_deeply($simple, {
+	'ατομο' => {
+		'ονομα' => 'Γιώργος',
+	},
+}, 'xml_to_simple with bytes flag');
+is simple_to_xml($simple, {bytes => 1}), encode_utf8($xml), 'simple_to_xml with bytes flag';
 
 # PARENT
 note 'parent';
