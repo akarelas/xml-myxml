@@ -1,5 +1,8 @@
 Revision history for XML-MyXML
 
+0.9403  2016-11-28
+        - testing something really unimportant
+
 0.9402  2016-07-26
         - replaced $ in regexes with \z, to slightly improve accuracy of XML parsing
         - publish dist.ini and weaver.ini to CPAN

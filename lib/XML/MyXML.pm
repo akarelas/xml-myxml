@@ -916,5 +916,7 @@ your bug as I make changes.
 
 =cut
 
+package Algorithm::Diff;
+
 1; # End of XML::MyXML
 
