@@ -4,7 +4,7 @@ package XML::MyXML;
 use strict;
 use warnings;
 use Carp;
-use Scalar::Util qw( weaken );
+use Scalar::Util qw/ weaken /;
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(tidy_xml object_to_xml xml_to_object simple_to_xml xml_to_simple check_xml xml_escape);
@@ -20,7 +20,7 @@ use Encode;
     print tidy_xml($xml);
 
     my $obj = xml_to_object($xml);
-    print "Price in Euros = " . $obj->path('price/eur')->value;
+    print "Price in Euros = " . $obj->path('price/eur')->text;
 
     $obj->simplify is hashref { item => { name => 'Table', price => { usd => '10.00', eur => '8.50' } } }
     $obj->simplify({ internal => 1 }) is hashref { name => 'Table', price => { usd => '10.00', eur => '8.50' } }
@@ -37,7 +37,7 @@ It will ignore (won't parse) C<< <!DOCTYPE...> >>, C<< <?...?> >> and other C<< 
 
 All strings (XML documents, attribute names, values, etc) produced by this module or passed as parameters to its functions, are strings that contain characters, rather than bytes/octets. Unless you use the C<bytes> function flag (see below), in which case the XML documents (and just the XML documents) will be byte/octet strings.
 
-XML documents to be parsed may not contain the C<< > >> character unencoded in attribute values
+XML documents to be parsed may not contain the C<< > >> character unencoded in attribute values.
 
 =head1 OPTIONAL FUNCTION FLAGS
 
@@ -304,7 +304,7 @@ sub _objectarray_to_xml {
 			foreach my $attrname (keys %{$stuff->{attrs}}) {
 				$xml .= " ".$attrname.'="'._encode($stuff->{attrs}{$attrname}).'"';
 			}
-			if (! defined $stuff->{content}) {
+			if (! defined $stuff->{content} or ! @{ $stuff->{content} }) {
 				$xml .= "/>"
 			} else {
 				$xml .= ">";
@@ -590,6 +590,7 @@ package XML::MyXML::Object;
 
 use Carp;
 use Encode;
+use Scalar::Util qw/ weaken /;
 
 =head1 OBJECT METHODS
 
@@ -738,9 +739,9 @@ sub path {
 	return wantarray ? @result : $result[0];
 }
 
-=head2 $obj->value
+=head2 $obj->text([set_value]), also known as $obj->value([set_value])
 
-When the element represented by the $obj object has only text contents, returns those contents as a string. If the $obj element has no contents, value will return an empty string.
+If provided a set_value, will delete all contents of $obj and will place C<set_value> as its text contents. Otherwise will return the text contents of this object, and of its descendants, in a single string.
 
 Optional flags: C<strip>
 
@@ -748,16 +749,35 @@ Optional flags: C<strip>
 
 sub value {
 	my $self = shift;
-	my $flags = shift || {};
+	my $flags = (@_ and ref $_[-1]) ? pop : {};
+	my $set_value = @_ ? (shift // '') : undef;
 
-	if ($self->{content} and $self->{content}[0]) {
-		my $value = $self->{content}[0]{value};
-		if ($flags->{strip}) { $value = XML::MyXML::_strip($value); }
+	if (! defined $set_value) {
+		my $value = '';
+		if ($self->{content}) {
+			foreach my $child (@{ $self->{content} }) {
+				$value .= $child->value($flags);
+			}
+		}
+		if ($self->{value}) {
+			my $temp_value = $self->{value};
+			if ($flags->{strip}) { $temp_value = XML::MyXML::_strip($temp_value); }
+			$value .= $temp_value;
+		}
 		return $value;
 	} else {
-		return undef;
+		if (length $set_value) {
+			my $entry = { value => $set_value, parent => $self };
+			weaken( $entry->{parent} );
+			bless $entry, 'XML::MyXML::Object';
+			$self->{content} = [ $entry ];
+		} else {
+			$self->{content} = [];
+		}
 	}
 }
+
+*text = \&value;
 
 =head2 $obj->attr('attrname' [, 'attrvalue'])
 

@@ -265,5 +265,15 @@ note 'parent';
 is($obj->path('ονομα')->parent, $obj, 'childs parent == identity');
 is($obj->parent, undef, 'top parent == undef');
 
+# VALUE (GET/SET)
+note 'value get/set';
+is xml_to_object('<person/>')->value, '', 'empty value get';
+is $obj->path('ονομα')->value, 'Γιώργος', 'value get';
+$obj->value('Nick&John');
+is $obj->to_xml, '<ατομο>Nick&amp;John</ατομο>', 'value set';
+$obj->value('');
+is $obj->to_xml, '<ατομο/>', 'value set to empty';
+is xml_to_object('<person><name><first> Alex&amp;ander </first><middle/><last>Karelas</last></name><age>40</age></person>')->path('name')->value, ' Alex&ander Karelas', 'get complex value w/o strip';
+is xml_to_object('<person><name><first> Alex&amp;ander </first><middle/><last>Karelas</last></name><age>40</age></person>')->path('name')->text({strip => 1}), 'Alex&anderKarelas', 'get complex value with strip';
 
 done_testing();
