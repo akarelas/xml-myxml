@@ -37,7 +37,7 @@ It will ignore (won't parse) C<< <!DOCTYPE...> >>, C<< <?...?> >> and other C<< 
 
 All strings (XML documents, attribute names, values, etc) produced by this module or passed as parameters to its functions, are strings that contain characters, rather than bytes/octets. Unless you use the C<bytes> function flag (see below), in which case the XML documents (and just the XML documents) will be byte/octet strings.
 
-XML documents to be parsed may not contain the C<< > >> character unencoded in attribute values.
+XML documents to be parsed may not contain the C<< > >> character unencoded in attribute values
 
 =head1 OPTIONAL FUNCTION FLAGS
 
