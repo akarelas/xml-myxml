@@ -1,7 +1,10 @@
 Revision history for XML-MyXML
 
+0.9406  2017-01-12
+        - Fixed compatibility with perl v5.8 again
+
 0.9405  2017-01-12
-        - allow use to set the value (aka "text contents") of a node, with $obj->value("text")
+        - allow user to set the value (aka "text contents") of a node, with $obj->value("text")
         - when getting the value of a node, returns text contents of all descendant nodes as well
         - $obj->text is an alias for $obj->value
 

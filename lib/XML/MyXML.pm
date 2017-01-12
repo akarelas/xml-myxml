@@ -747,10 +747,10 @@ Optional flags: C<strip>
 
 =cut
 
-sub value {
+sub text {
 	my $self = shift;
-	my $flags = (@_ and ref $_[-1]) ? pop : {};
-	my $set_value = @_ ? (shift // '') : undef;
+	my $flags = (@_ and ref $_[-1]) ? pop() : {};
+	my $set_value = @_ ? defined $_[0] ? shift() : '' : undef;
 
 	if (! defined $set_value) {
 		my $value = '';
@@ -777,7 +777,7 @@ sub value {
 	}
 }
 
-*text = \&value;
+*value = \&text;
 
 =head2 $obj->attr('attrname' [, 'attrvalue'])
 
