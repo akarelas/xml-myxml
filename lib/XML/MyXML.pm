@@ -779,6 +779,36 @@ sub text {
 
 *value = \&text;
 
+=head2 $obj->inner_xml([xml_string])
+
+Gets or sets the inner XML of the $obj node, depending on whether C<xml_string> is provided.
+
+Optional flags: C<bytes>
+
+=cut
+
+sub inner_xml {
+	my $self = shift;
+	my $flags = (@_ and ref $_[-1]) ? pop() : {};
+	my $set_xml = @_ ? defined $_[0] ? shift() : '' : undef;
+
+	if (! defined $set_xml) {
+		my $xml = $self->to_xml($flags);
+		$xml =~ s/\A\<.*?\>//s;
+		$xml =~ s/\<\/[^\>]*\>\z//s;
+		return $xml;
+	} else {
+		my $xml = "<div>$set_xml</div>";
+		my $obj = XML::MyXML::xml_to_object($xml, $flags);
+		$self->{content} = [];
+		foreach my $child (@{ $obj->{content} || [] }) {
+			$child->{parent} = $self;
+			weaken( $child->{parent} );
+			push @{ $self->{content} }, $child;
+		}
+	}
+}
+
 =head2 $obj->attr('attrname' [, 'attrvalue'])
 
 Gets/Sets the value of the 'attrname' attribute of the top element. Returns undef if attribute does not exist. If called without the 'attrname' paramter, returns a hash with all attribute => value pairs. If setting with an attrvalue of C<undef>, then removes that attribute entirely.
@@ -923,7 +953,6 @@ sub to_tidy_xml {
 
 	return $self->to_xml({ %$flags, tidy => 1 });
 }
-
 
 
 

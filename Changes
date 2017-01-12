@@ -1,5 +1,8 @@
 Revision history for XML-MyXML
 
+0.9407  2017-01-12
+        - get or set a node's inner_xml, using the method of the same name
+
 0.9406  2017-01-12
         - Fixed compatibility with perl v5.8 again
 

@@ -275,5 +275,22 @@ $obj->value('');
 is $obj->to_xml, '<ατομο/>', 'value set to empty';
 is xml_to_object('<person><name><first> Alex&amp;ander </first><middle/><last>Karelas</last></name><age>40</age></person>')->path('name')->value, ' Alex&ander Karelas', 'get complex value w/o strip';
 is xml_to_object('<person><name><first> Alex&amp;ander </first><middle/><last>Karelas</last></name><age>40</age></person>')->path('name')->text({strip => 1}), 'Alex&anderKarelas', 'get complex value with strip';
+$obj = xml_to_object('<person>Alex</person>');
+$obj->value(undef);
+is $obj->to_xml, '<person/>', 'set text to undef 1';
+is $obj->value, '', 'set text to undef 2';
 
+# INNER_XML (GET/SET)
+note 'inner_xml get/set';
+$obj = xml_to_object('<person><name><first> Alex&amp;ander </first><middle/><last>Karelas</last></name><age>40</age></person>');
+is $obj->path('name')->inner_xml, '<first> Alex&amp;ander </first><middle/><last>Karelas</last>', 'inner_xml get';
+my $obj2 = xml_to_object('<ατομο/>');
+is $obj2->inner_xml, '', 'empty inner_xml get';
+$obj->path('name')->inner_xml('<given>John</given> <family>Doe</family>');
+is $obj->path('name')->to_xml, '<name><given>John</given> <family>Doe</family></name>', 'set inner_xml';
+$obj->path('name')->inner_xml(undef);
+is $obj->path('name')->to_xml, '<name/>', 'set inner_xml empty';
+$obj2->inner_xml(encode_utf8('<ονομα/>'), {bytes => 1});
+is $obj2->to_xml, '<ατομο><ονομα/></ατομο>', 'set inner_xml bytes';
+is $obj2->inner_xml({bytes => 1}), encode_utf8('<ονομα/>'), 'get inner_xml bytes';
 done_testing();
