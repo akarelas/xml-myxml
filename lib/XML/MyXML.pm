@@ -11,6 +11,8 @@ our @EXPORT_OK = qw(tidy_xml object_to_xml xml_to_object simple_to_xml xml_to_si
 our %EXPORT_TAGS = (all => [@EXPORT_OK]);
 use Encode;
 
+my $DEFAULT_INDENTSTRING = ' ' x 4;
+
 =head1 SYNOPSIS
 
     use XML::MyXML qw(tidy_xml xml_to_object);
@@ -53,7 +55,7 @@ C<internal> : the function will only return the contents of an element in a hash
 
 C<tidy> : the function will return tidy XML
 
-C<indentstring> : when producing tidy XML, this denotes the string with which child elements will be indented (Default is the 'tab' character)
+C<indentstring> : when producing tidy XML, this denotes the string with which child elements will be indented (Default is a string of 4 spaces)
 
 C<save> : the function (apart from doing what it's supposed to do) will also save its XML output in a file whose path is denoted by this flag
 
@@ -336,7 +338,7 @@ sub _tidy_object {
     my $tabs = shift || 0;
     my $flags = shift || {};
 
-    my $indentstring = exists $flags->{indentstring} ? $flags->{indentstring} : "\t";
+    my $indentstring = exists $flags->{indentstring} ? $flags->{indentstring} : $DEFAULT_INDENTSTRING;
 
     if (! defined $object->{content} or ! @{$object->{content}}) { return; }
     my $hastext;
@@ -436,7 +438,7 @@ sub simple_to_xml {
     } else {
         $xml .= "<$key>"._arrayref_to_xml($value, $flags)."</$tag>";
     }
-    if ($flags->{tidy}) { $xml = tidy_xml($xml, { $flags->{indentstring} ? (indentstring => $flags->{indentstring}) : () }); }
+    if ($flags->{tidy}) { $xml = tidy_xml($xml, { exists $flags->{indentstring} ? (indentstring => $flags->{indentstring}) : () }); }
     my $decl = $flags->{complete} ? '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'."\n" : '';
     $decl .= "<?xml-stylesheet type=\"text/xsl\" href=\"$flags->{xslt}\"?>\n" if $flags->{xslt};
     $xml = $decl . $xml;
