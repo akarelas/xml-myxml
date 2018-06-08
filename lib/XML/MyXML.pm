@@ -380,6 +380,36 @@ Produces a raw XML string from either an array reference, a hash reference or a 
     [ thing => [ name => 'John', location => [ city => 'New York', country => 'U.S.A.' ] ] ]
     { thing => { name => 'John', location => [ city => 'New York', city => 'Boston', country => 'U.S.A.' ] } }
 
+You can also choose attributes for your elements, in a great variety of ways, as follows. I tried to cover
+every way imaginable, so you don't need to remember a correct one.
+
+    {thing => [
+		'item id="1"' => 'chair',
+		[item => {id => 2}] => 'table',
+		[item => [id => 3]] => 'door',
+		[item => id => 4] => 'sofa',
+		{item => {id => 5}} => 'bed',
+		{item => [id => 6]} => 'shirt',
+		[item => {id => 7, other => 8}, [more => 9, also => 10, but_not => undef]] => 'towel'
+	]}
+
+This produces this XML:
+
+    <thing>
+		<item id="1">chair</item>
+		<item id="2">table</item>
+		<item id="3">door</item>
+		<item id="4">sofa</item>
+		<item id="5">bed</item>
+		<item id="6">shirt</item>
+		<item id="7" other="8" more="9" also="10">towel</item>
+	</thing>
+
+Of course if the "simple object" is a hashref, the key cannot be a reference (hash keys are always strings), so
+if you want attributes on such an element, you need to make sure that either the containing simple object
+is an arrayref, or that the key is a string which contains its attributes like so: 'item id="1" other="2"',
+as in the previous example.
+
 All the strings in C<$simple_array_ref> need to contain characters, rather than bytes/octets. The C<bytes> optional flag only affects the produced XML string.
 
 Optional flags: C<complete>, C<tidy>, C<indentstring>, C<save>, C<xslt>, C<bytes>
@@ -392,6 +422,7 @@ sub simple_to_xml {
 
 	my $xml = '';
 	my ($key, $value, @residue) = (ref $arref eq 'HASH') ? %$arref : @$arref;
+	$key = _key_to_string($key);
 	if (@residue) { croak "Error: the provided simple ref contains more than 1 top element"; }
 	my ($tag) = $key =~ /\A(\S+)/g;
 	croak encode_utf8("Error: Strange key: $key") if ! defined $tag;
@@ -421,6 +452,25 @@ sub simple_to_xml {
 	return $xml;
 }
 
+sub _flatten {
+	my ($thing) = @_;
+
+	if (!ref $thing) { return $thing; }
+	elsif (ref $thing eq 'HASH') { return map _flatten($_), %$thing; }
+	elsif (ref $thing eq 'ARRAY') { return map _flatten($_), @$thing; }
+	else { croak 'Error: reference of invalid type in simple_to_xml: '.(ref $thing); }
+}
+
+sub _key_to_string {
+	my ($key) = @_;
+
+	if (! ref $key) {
+		return $key;
+	} else {
+		my ($tag, %attrs) = _flatten($key);
+		return $tag . join('', map ' '.$_.'="'._encode($attrs{$_}).'"', grep {defined $attrs{$_}} keys %attrs);
+	}
+}
 
 sub _arrayref_to_xml {
 	my $arref = shift;
@@ -432,6 +482,7 @@ sub _arrayref_to_xml {
 
 	foreach (my $i = 0; $i <= $#$arref; ) {
 		my $key = $arref->[$i++];
+		$key = _key_to_string($key);
 		my ($tag) = $key =~ /\A(\S+)/g;
 		croak encode_utf8("Error: Strange key: $key") if ! defined $tag;
 		my $value = $arref->[$i++];
