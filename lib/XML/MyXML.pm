@@ -1123,6 +1123,9 @@ L<https://github.com/akarelas/xml-myxml/issues>.
 I will be notified, and then you'll automatically be notified of progress on
 your bug as I make changes.
 
+You can get notified of new versions of this module for free, by email or RSS,
+at L<https://www.perlmodules.net/viewfeed/distro/XML-MyXML>
+
 =cut
 
 
