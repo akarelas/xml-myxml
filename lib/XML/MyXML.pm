@@ -75,7 +75,7 @@ sub _encode {
     my $string = shift;
     my $entities = shift || {};
     defined $string or $string = '';
-    my %replace = 	(
+    my %replace =   (
                     '<' => '&lt;',
                     '>' => '&gt;',
                     '&' => '&amp;',
@@ -115,7 +115,7 @@ sub _decode {
     push @capture, '&#x[0-9A-Fa-f]+;', '&#[0-9]+;';
     my $capture = "(".join("|", @capture).")";
     my @captured = $string =~ /$capture/g;
-    @captured	or return $string;
+    @captured   or return $string;
     my %conv;
     foreach my $e (@captured) {
         if (exists $conv{$e}) { next; }
@@ -180,19 +180,19 @@ sub xml_to_object {
     my $flags = shift || {};
 
     if ($flags->{file}) {
-        open my $fh, '<', $xml	or croak "Error: The file '$xml' could not be opened for reading: $!";
+        open my $fh, '<', $xml  or croak "Error: The file '$xml' could not be opened for reading: $!";
         $xml = join '', <$fh>;
         close $fh;
     }
 
     if ($flags->{bytes} or $flags->{file}) {
         my (undef, undef, $encoding) = $xml =~ /<\?xml(\s[^>]+)?\sencoding=(['"])(.*?)\2/g;
-        $encoding = 'UTF-8'		if ! defined $encoding;
+        $encoding = 'UTF-8'     if ! defined $encoding;
         if ($encoding =~ /\Autf-?8\z/i) { $encoding = 'UTF-8'; }
         eval {
             $xml = decode($encoding, $xml, Encode::FB_CROAK);
         };
-        ! $@	or croak 'Error: Input string is invalid UTF-8';
+        ! $@    or croak 'Error: Input string is invalid UTF-8';
     }
 
     my $entities = {};
@@ -450,7 +450,7 @@ sub simple_to_xml {
         close $fh;
     }
 
-    $xml = encode_utf8($xml)	if $flags->{bytes};
+    $xml = encode_utf8($xml)    if $flags->{bytes};
     return $xml;
 }
 
@@ -678,11 +678,11 @@ sub cmp_element {
             ? @$desc{qw/ tag attrs /}
             : _parse_description($desc);
 
-    ! length $tag or $self->{element} =~ /(\A|\:)\Q$tag\E\z/	or return 0;
+    ! length $tag or $self->{element} =~ /(\A|\:)\Q$tag\E\z/    or return 0;
     foreach my $attr (keys %$attrs) {
         my $val = $self->attr($attr);
-        defined $val											or return 0;
-        ! defined $attrs->{$attr} or $attrs->{$attr} eq $val	or return 0;
+        defined $val                                            or return 0;
+        ! defined $attrs->{$attr} or $attrs->{$attr} eq $val    or return 0;
     }
 
     return 1;
@@ -695,7 +695,7 @@ sub children {
     $tag = '' if ! defined $tag;
 
     my @all_children = grep { defined $_->{element} } @{$self->{content}};
-    length $tag		or return @all_children;
+    length $tag     or return @all_children;
 
     ($tag, my $attrs) = _parse_description($tag);
     my $desc = { tag => $tag, attrs => $attrs };
@@ -770,7 +770,7 @@ sub path {
     my @path;
     my $orig_path = $path;
     my $start_root = $path =~ m!\A/!;
-    $path = "/" . $path		unless $start_root;
+    $path = "/" . $path     unless $start_root;
     while (length $path) {
         my $success = $path =~ s!\A/((?:[^/\[]*)?(?:\[[^\]=]+(?:=(?:\"[^"]*\"|[^"\]]*))?\])*)!!;
         my $seg = $1;
@@ -783,11 +783,11 @@ sub path {
 
     my @result = ($self);
     if ($start_root) {
-        $self->cmp_element(shift @path)		or return;
+        $self->cmp_element(shift @path)     or return;
     }
     for (my $i = 0; $i <= $#path; $i++) {
         @result = map $_->children( $path[$i] ), @result;
-        @result		or return;
+        @result     or return;
     }
     return wantarray ? @result : $result[0];
 }
@@ -921,7 +921,7 @@ sub tag {
 
     my $tag = $self->{element};
     if (defined $tag) {
-        $tag =~ s/\A.*\://	if $flags->{strip_ns};
+        $tag =~ s/\A.*\://  if $flags->{strip_ns};
         return $tag;
     } else {
         return undef;
@@ -988,7 +988,7 @@ sub to_xml {
         print $fh $xml;
         close $fh;
     }
-    $xml = encode_utf8($xml)	if $flags->{bytes};
+    $xml = encode_utf8($xml)    if $flags->{bytes};
     return $xml;
 }
 
