@@ -1,17 +1,27 @@
 package XML::MyXML;
-# ABSTRACT: A simple-to-use XML module, for parsing and creating XML documents
 
+use 5.008001;
 use strict;
 use warnings;
+
+use Encode;
 use Carp;
 use Scalar::Util qw/ weaken /;
+
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(tidy_xml object_to_xml xml_to_object simple_to_xml xml_to_simple check_xml xml_escape);
 our %EXPORT_TAGS = (all => [@EXPORT_OK]);
-use Encode;
+
+our $VERSION = "1.03";
 
 my $DEFAULT_INDENTSTRING = ' ' x 4;
+
+=encoding utf-8
+
+=head1 NAME
+
+XML::MyXML - A simple-to-use XML module, for parsing and creating XML documents
 
 =head1 SYNOPSIS
 
@@ -748,8 +758,8 @@ sub check_xml {
 
 package XML::MyXML::Object;
 
-use Carp;
 use Encode;
+use Carp;
 use Scalar::Util qw/ weaken /;
 
 =head1 OBJECT METHODS
@@ -1125,6 +1135,17 @@ your bug as I make changes.
 
 You can get notified of new versions of this module for free, by email or RSS,
 at L<https://www.perlmodules.net/viewfeed/distro/XML-MyXML>
+
+=head1 LICENSE
+
+Copyright (C) Alexander Karelas.
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=head1 AUTHOR
+
+Alexander Karelas E<lt>karjala@cpan.orgE<gt>
 
 =cut
 

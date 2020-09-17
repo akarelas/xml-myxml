@@ -1,5 +1,10 @@
 Revision history for XML-MyXML
 
+{{$NEXT}}
+
+    - packaging this distro with Minilla from now on
+    - raised dep on perl to 5.008001
+
 1.02    2018-06-12
         - Add mention of perlmodules.net
 
