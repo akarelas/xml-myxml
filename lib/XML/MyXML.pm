@@ -13,7 +13,7 @@ our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(tidy_xml object_to_xml xml_to_object simple_to_xml xml_to_simple check_xml xml_escape);
 our %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-our $VERSION = "1.04";
+our $VERSION = "1.05";
 
 my $DEFAULT_INDENTSTRING = ' ' x 4;
 
@@ -767,6 +767,8 @@ package XML::MyXML::Object;
 use Encode;
 use Carp;
 use Scalar::Util qw/ weaken /;
+
+our $VERSION = "1.05";
 
 =head1 OBJECT METHODS
 

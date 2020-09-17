@@ -2,6 +2,8 @@ Revision history for XML-MyXML
 
 {{$NEXT}}
 
+    - (bugfix) added version number to XML::MyXML::Object
+
 1.04 2020-09-17T19:00:12Z
 
     - improved documentation of 'xml_to_simple'
