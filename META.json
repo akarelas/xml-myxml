@@ -68,7 +68,7 @@
          "web" : "https://github.com/akarelas/xml-myxml"
       }
    },
-   "version" : "1.03",
+   "version" : "1.04",
    "x_authority" : "cpan:KARJALA",
    "x_contributors" : [
       "Alexander Karelas <alex.karelas@gmail.com>"

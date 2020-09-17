@@ -189,7 +189,7 @@ represent its list of addresses under an arrayref, like this:
     </person>
 
 Finally, to set attributes to your elements (eg id="12") you need to replace the key with either
-a string containing attributes as well (eg: 'address id="12"'), or replace it with a reference, as the many
+a string containing attributes as well (eg: `'address id="12"'`), or replace it with a reference, as the many
 items in the examples below:
 
     {thing => [
@@ -220,7 +220,7 @@ the "correct" one.
 Of course if the "simple structure" is a hashref, the key cannot be a reference (because hash keys are always
 strings), so if you want attributes on your elements, you either need the enclosing structure to be an
 arrayref as in the example above, to allow keys to be refs which contain the attributes, or you need to
-represent the key (=tag+attrs) as a string, like this (also in the previous example): 'item id="1"'
+represent the key (=tag+attrs) as a string, like this (also in the previous example): `'item id="1"'`
 
 This concludes the mini-tutorial of the simple\_to\_xml function.
 
@@ -230,11 +230,17 @@ Optional flags: `complete`, `tidy`, `indentstring`, `save`, `xslt`, `bytes`
 
 ## xml\_to\_simple($raw\_xml)
 
-Produces a very simple hash object from the raw XML string provided. An example hash object created thusly is this: `{ thing => { name => 'John', location => { city => 'New York', country => 'U.S.A.' } } }`
+Produces a very simple hash object from the raw XML string provided. An example hash object created thusly is this:
+`{ thing => { name => 'John', location => { city => 'New York', country => 'U.S.A.' } } }`
 
-Since the object created is a hashref, duplicate keys will be discarded. WARNING: This function only works on very simple XML strings, i.e. children of an element may not consist of both text and elements (child elements will be discarded in that case)
+**WARNING:** This function only works on very simple XML strings, i.e. children of an element may not consist of both
+text and elements (child elements will be discarded in that case). Also attributes in tags are ignored.
 
-All strings contained in the output simple structure, will always contain characters rather than octets/bytes, regardless of the `bytes` optional flag.
+Since the object created is a hashref (unless used with the `arrayref` optional flag), duplicate keys will be
+discarded.
+
+All strings contained in the output simple structure will always contain characters rather than octets/bytes,
+regardless of the `bytes` optional flag.
 
 Optional flags: `internal`, `strip`, `file`, `strip_ns`, `arrayref`, `bytes`
 
