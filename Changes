@@ -2,6 +2,8 @@ Revision history for XML-MyXML
 
 {{$NEXT}}
 
+    - split file w/ 2 classes into one file per class
+
 1.05 2020-09-17T19:28:42Z
 
     - (bugfix) added version number to XML::MyXML::Object
