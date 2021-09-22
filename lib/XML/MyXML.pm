@@ -549,7 +549,9 @@ sub simple_to_xml {
     croak encode_utf8("Error: Strange key: $key") if ! defined $tag;
 
     if (! ref $value) {
-        if (defined $value and length $value) {
+        if ($key eq '!as_is') {
+            $xml .= $value;
+        } elsif (defined $value and length $value) {
             $xml .= "<$key>"._encode($value)."</$tag>";
         } else {
             $xml .= "<$key/>";
@@ -839,7 +841,7 @@ Optional flags: C<bytes>
 
 =head2 $obj->attr('attrname' [, 'attrvalue'])
 
-Gets/Sets the value of the 'attrname' attribute of the top element. Returns undef if attribute does not exist. If called without the 'attrname' paramter, returns a hash with all attribute => value pairs. If setting with an attrvalue of C<undef>, then removes that attribute entirely.
+Gets/Sets the value of the 'attrname' attribute of the top element. Returns undef if attribute does not exist. If called without the 'attrname' parameter, returns a hash with all attribute => value pairs. If setting with an attrvalue of C<undef>, then removes that attribute entirely.
 
 Input parameters and output are all in character strings, rather than octets/bytes.
 
