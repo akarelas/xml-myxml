@@ -2,6 +2,8 @@ Revision history for XML-MyXML
 
 {{$NEXT}}
 
+    - minor fix (removed warnings)
+
 1.07 2021-09-22T03:17:40Z
 
     - minor internal changes

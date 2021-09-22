@@ -24,6 +24,7 @@ sub _parse_description {
     my ($tag, $attrs_str) = $desc =~ /\A([^\[]*)(.*)\z/g;
     my %attrs = $attrs_str =~ /\[([^\]=]+)(?:=(\"[^"]*\"|[^"\]]*))?\]/g;
     foreach my $value (values %attrs) {
+        defined $value or next;
         $value =~ s/\A\"//;
         $value =~ s/\"\z//;
     }
