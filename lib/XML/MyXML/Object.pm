@@ -3,9 +3,11 @@ package XML::MyXML::Object;
 use strict;
 use warnings;
 
+use XML::MyXML::Util 'trim';
+
 use Encode;
 use Carp;
-use Scalar::Util qw/ weaken /;
+use Scalar::Util 'weaken';
 
 our $VERSION = "1.07";
 
@@ -13,37 +15,35 @@ sub new {
     my $class = shift;
     my $xml = shift;
 
-    my $obj = XML::MyXML::xml_to_object($xml);
-    bless $obj, $class;
-    return $obj;
+    return bless XML::MyXML::xml_to_object($xml), $class;
 }
 
 sub _parse_description {
     my ($desc) = @_;
 
-    my ($tag, $attrs_str) = $desc =~ /\A([^\[]*)(.*)\z/g;
+    my ($el_name, $attrs_str) = $desc =~ /^([^\[]*)(.*)\z/;
     my %attrs = $attrs_str =~ /\[([^\]=]+)(?:=(\"[^"]*\"|[^"\]]*))?\]/g;
-    foreach my $value (values %attrs) {
-        defined $value or next;
-        $value =~ s/\A\"//;
-        $value =~ s/\"\z//;
+    foreach my $attr_value (values %attrs) {
+        defined $attr_value or next;
+        $attr_value =~ s/^\"//;
+        $attr_value =~ s/\"\z//;
     }
 
-    return ($tag, \%attrs);
+    return ($el_name, \%attrs);
 }
 
 sub cmp_element {
     my ($self, $desc) = @_;
 
-    my ($tag, $attrs) = ref $desc
+    my ($el_name, $attrs) = ref $desc
         ? @$desc{qw/ tag attrs /}
         : _parse_description($desc);
 
-    ! length $tag or $self->{element} =~ /(\A|\:)\Q$tag\E\z/    or return 0;
+    ! length $el_name or $self->{el_name} =~ /(^|\:)\Q$el_name\E\z/ or return 0;
     foreach my $attr (keys %$attrs) {
-        my $val = $self->attr($attr);
-        defined $val                                            or return 0;
-        ! defined $attrs->{$attr} or $attrs->{$attr} eq $val    or return 0;
+        my $attr_value = $self->attr($attr);
+        defined $attr_value                                            or return 0;
+        ! defined $attrs->{$attr} or $attrs->{$attr} eq $attr_value    or return 0;
     }
 
     return 1;
@@ -51,19 +51,17 @@ sub cmp_element {
 
 sub children {
     my $self = shift;
-    my $tag = shift;
+    my $el_name = shift;
 
-    $tag = '' if ! defined $tag;
+    $el_name = '' if ! defined $el_name;
 
-    my @all_children = grep { defined $_->{element} } @{$self->{content}};
-    length $tag     or return @all_children;
+    my @all_children = grep { defined $_->{el_name} } @{$self->{content}};
+    length $el_name or return @all_children;
 
-    ($tag, my $attrs) = _parse_description($tag);
-    my $desc = { tag => $tag, attrs => $attrs };
+    ($el_name, my $attrs) = _parse_description($el_name);
+    my $desc = { tag => $el_name, attrs => $attrs };
 
-    my @results = grep $_->cmp_element($desc), @all_children;
-
-    return @results;
+    return grep $_->cmp_element($desc), @all_children;
 }
 
 sub path {
@@ -71,24 +69,19 @@ sub path {
     my $path = shift;
 
     my @path;
-    my $orig_path = $path;
-    my $start_root = $path =~ m!\A/!;
-    $path = "/" . $path     unless $start_root;
+    my $original_path = $path;
+    my $path_starts_with_root = $path =~ m|^/|;
+    $path = "/$path" unless $path_starts_with_root;
     while (length $path) {
         my $success = $path =~ s!\A/((?:[^/\[]*)?(?:\[[^\]=]+(?:=(?:\"[^"]*\"|[^"\]]*))?\])*)!!;
         my $seg = $1;
-        if ($success) {
-            push @path, $seg;
-        } else {
-            croak "Invalid XML path: $orig_path";
-        }
+        $success or croak "Invalid XML path: $original_path";
+        push @path, $seg;
     }
 
     my @result = ($self);
-    if ($start_root) {
-        $self->cmp_element(shift @path)     or return;
-    }
-    for (my $i = 0; $i <= $#path; $i++) {
+    $self->cmp_element(shift @path) or return if $path_starts_with_root;
+    for (my $i = 0; $i < @path; $i++) {
         @result = map $_->children( $path[$i] ), @result;
         @result     or return;
     }
@@ -97,27 +90,27 @@ sub path {
 
 sub text {
     my $self = shift;
-    my $flags = (@_ and ref $_[-1]) ? pop() : {};
-    my $set_value = @_ ? defined $_[0] ? shift() : '' : undef;
+    my $flags = (@_ and ref $_[-1]) ? pop : {};
+    my $set_value = @_ ? (defined $_[0] ? shift : '') : undef;
 
     if (! defined $set_value) {
         my $value = '';
         if ($self->{content}) {
-            foreach my $child (@{ $self->{content} }) {
-                $value .= $child->value($flags);
-            }
+            $value .= $_->text($flags) foreach @{ $self->{content} };
         }
-        if ($self->{value}) {
-            my $temp_value = $self->{value};
-            if ($flags->{strip}) { $temp_value = XML::MyXML::_strip($temp_value); }
+        if ($self->{text}) {
+            my $temp_value = $self->{text};
+            $temp_value = trim $temp_value if $flags->{strip};
             $value .= $temp_value;
         }
         return $value;
     } else {
         if (length $set_value) {
-            my $entry = { value => $set_value, parent => $self };
-            weaken( $entry->{parent} );
-            bless $entry, 'XML::MyXML::Object';
+            my $entry = bless {
+                text => $set_value,
+                parent => $self
+            }, 'XML::MyXML::Object';
+            weaken $entry->{parent};
             $self->{content} = [ $entry ];
         } else {
             $self->{content} = [];
@@ -129,12 +122,13 @@ sub text {
 
 sub inner_xml {
     my $self = shift;
-    my $flags = (@_ and ref $_[-1]) ? pop() : {};
-    my $set_xml = @_ ? defined $_[0] ? shift() : '' : undef;
+    my $flags = (@_ and ref $_[-1]) ? pop : {};
+    my $set_xml = @_ ? defined $_[0] ? shift : '' : undef;
 
     if (! defined $set_xml) {
+        # TODO: there is a bug here: if $xml is just a self-closing tag, this will not work
         my $xml = $self->to_xml($flags);
-        $xml =~ s/\A\<.*?\>//s;
+        $xml =~ s/^\<.*?\>//s;
         $xml =~ s/\<\/[^\>]*\>\z//s;
         return $xml;
     } else {
@@ -143,7 +137,7 @@ sub inner_xml {
         $self->{content} = [];
         foreach my $child (@{ $obj->{content} || [] }) {
             $child->{parent} = $self;
-            weaken( $child->{parent} );
+            weaken $child->{parent};
             push @{ $self->{content} }, $child;
         }
     }
@@ -151,32 +145,25 @@ sub inner_xml {
 
 sub attr {
     my $self = shift;
-    my $attrname = shift;
-    my ($set_to, $must_set, $flags);
+    my $attr_name = shift;
+    my $flags = ref $_[-1] ? pop : {};
+    my ($set_to, $must_set);
     if (@_) {
-        my $next = shift;
-        if (! ref $next) {
-            $set_to = $next;
-            $must_set = 1;
-            $flags = shift;
-        } else {
-            $flags = $next;
-        }
+        $set_to = shift;
+        $must_set = 1;
     }
-    $flags ||= {};
 
-    if (defined $attrname) {
+    if (defined $attr_name) {
         if ($must_set) {
             if (defined ($set_to)) {
-                $self->{attrs}{$attrname} = $set_to;
+                $self->{attrs}{$attr_name} = $set_to;
                 return $set_to;
             } else {
-                delete $self->{attrs}{$attrname};
+                delete $self->{attrs}{$attr_name};
                 return;
             }
         } else {
-            my $attrvalue = $self->{attrs}->{$attrname};
-            return $attrvalue;
+            return $self->{attrs}->{$attr_name};
         }
     } else {
         return %{$self->{attrs}};
@@ -187,14 +174,16 @@ sub tag {
     my $self = shift;
     my $flags = shift || {};
 
-    my $tag = $self->{element};
-    if (defined $tag) {
-        $tag =~ s/\A.*\://  if $flags->{strip_ns};
-        return $tag;
+    my $el_name = $self->{el_name};
+    if (defined $el_name) {
+        $el_name =~ s/^.*\:// if $flags->{strip_ns};
+        return $el_name;
     } else {
         return undef;
     }
 }
+
+*name = \&tag;
 
 sub parent {
     my $self = shift;
@@ -222,9 +211,15 @@ sub to_xml {
     my $self = shift;
     my $flags = shift || {};
 
-    my $decl = $flags->{complete} ? '<?xml version="1.1" encoding="UTF-8" standalone="yes" ?>'."\n" : '';
+    my $decl = '';
+    $decl .= qq'<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>\n' if $flags->{complete};
     my $xml = XML::MyXML::_objectarray_to_xml([$self]);
-    if ($flags->{tidy}) { $xml = XML::MyXML::tidy_xml($xml, { %$flags, bytes => 0, complete => 0, save => undef }); }
+    $xml = XML::MyXML::tidy_xml($xml, {
+        %$flags,
+        bytes => 0,
+        complete => 0,
+        save => undef
+    }) if $flags->{tidy};
     $xml = $decl . $xml;
     if (defined $flags->{save}) {
         open my $fh, '>', $flags->{save} or croak "Error: Couldn't open file '$flags->{save}' for writing: $!";
@@ -232,7 +227,7 @@ sub to_xml {
         print $fh $xml;
         close $fh;
     }
-    $xml = encode_utf8($xml)    if $flags->{bytes};
+    $xml = encode_utf8 $xml if $flags->{bytes};
     return $xml;
 }
 
