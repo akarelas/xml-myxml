@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use XML::MyXML::Object;
-use XML::MyXML::Util 'trim';
+use XML::MyXML::Util 'trim', 'strip_ns';
 
 use Encode;
 use Carp;
@@ -19,6 +19,7 @@ our %EXPORT_TAGS = (all => [@EXPORT_OK]);
 our $VERSION = "1.07";
 
 my $DEFAULT_INDENTSTRING = ' ' x 4;
+
 
 =encoding utf-8
 
@@ -113,6 +114,7 @@ sub _encode {
     return $string;
 }
 
+
 =head2 xml_escape($string)
 
 Returns the same string, but with the C<< < >>, C<< > >>, C<< & >>, C<< " >> and C<< ' >> characters
@@ -151,14 +153,6 @@ sub _decode {
             : $reference =~ /\&\#/ ? chr($number)
             : $replace{$reference};
     |gex;
-    return $string;
-}
-
-sub _strip_ns {
-    my $string = shift;
-
-    $string =~ s/^.+\:// if defined $string;
-
     return $string;
 }
 
@@ -202,7 +196,7 @@ sub xml_to_object {
     }
 
     if ($flags->{bytes} or $flags->{file}) {
-        my (undef, undef, $encoding) = $xml =~ /<\?xml(\s[^>]+)?\sencoding=(['"])(.*?)\2/g;
+        my (undef, undef, $encoding) = $xml =~ /<\?xml(\s[^>]+)?\sencoding=(['"])(.*?)\2/;
         $encoding = 'UTF-8' if ! defined $encoding or $encoding =~ /^utf\-?8\z/i;
         my $encoding_obj = find_encoding($encoding) or croak "Error: encoding '$encoding' not found";
         eval { $xml = $encoding_obj->decode($xml, Encode::FB_CROAK); 1 }
@@ -224,7 +218,7 @@ sub xml_to_object {
             } elsif ($item =~ /\A<\?/) { # like <?xml?> or <?target?>
                 if ($item !~ /\?>\z/) { croak encode_utf8("Error: Erroneous special markup - '$item'"); }
                 undef $item;
-            } elsif (my ($entname, undef, $entvalue) = $item =~ /^<!ENTITY\s+(\S+)\s+(['"])(.*?)\2\s*>\z/g) {
+            } elsif (my ($entname, undef, $entvalue) = $item =~ /^<!ENTITY\s+(\S+)\s+(['"])(.*?)\2\s*>\z/) {
                 $entities->{"&$entname;"} = _decode($entvalue);
                 undef $item;
             } elsif ($item =~ /<!/) { # like <!DOCTYPE> or <!ELEMENT> or <!ATTLIST>
@@ -240,7 +234,11 @@ sub xml_to_object {
         @items = grep defined, @items or croak "Error: No elements in the XML document";
     }
     my @stack;
-    my $object = bless ({ content => [] }, 'XML::MyXML::Object');
+    my $object = bless ({
+        content      => [],
+        full_ns_info => {},
+        ns_data      => {},
+    }, 'XML::MyXML::Object');
     my $pointer = $object;
     foreach my $item (@items) {
         if ($item =~ /^\<\/?\>\z/) {
@@ -249,10 +247,11 @@ sub xml_to_object {
             my ($el_name) = $1;
             $stack[-1]{el_name} eq $el_name
                 or croak encode_utf8("Error: Incompatible stack element: stack='$stack[-1]{el_name}' item='$item'");
-            my $stackentry = pop @stack;
-            delete $stackentry->{content} if ! @{$stackentry->{content}};
-            $pointer = $stackentry->{parent};
-        } elsif ($item =~ /^<[^>]+\/>\z/) {
+            my $stack_entry = pop @stack;
+            delete $stack_entry->{content} if ! @{$stack_entry->{content}};
+            $pointer = $stack_entry->{parent};
+        } elsif ($item =~ /^\<[^>]+?(\/)?\>\z/) {
+            my $is_self_closing = defined $1;
             my ($el_name) = $item =~ /^<([^\s>\/]+)/;
             defined $el_name or croak encode_utf8("Error: Strange tag: '$item'");
             $item =~ s/^\<\Q$el_name\E//;
@@ -262,34 +261,21 @@ sub xml_to_object {
             @attrs = grep {++$i % 2} @attrs;
             my %attr;
             foreach my $attr (@attrs) {
-                my ($attr_name, undef, $attr_value) = $attr =~ /^(\S+?)=(['"])(.*?)\2\z/g;
+                my ($attr_name, undef, $attr_value) = $attr =~ /^(\S+?)=(['"])(.*?)\2\z/;
                 defined $attr_name or croak encode_utf8("Error: Strange attribute: '$attr'");
                 $attr{$attr_name} = _decode($attr_value, $entities);
             }
-            my $entry = { el_name => $el_name, attrs => \%attr, parent => $pointer };
+            my $entry = bless {
+                el_name => $el_name,
+                attrs   => \%attr,
+                $is_self_closing ? () : (content => []),
+                parent  => $pointer,
+            }, 'XML::MyXML::Object';
             weaken $entry->{parent};
-            bless $entry, 'XML::MyXML::Object';
+            $entry->_apply_namespace_declarations;
+            push @stack, $entry unless $is_self_closing;
             push @{$pointer->{content}}, $entry;
-        } elsif ($item =~ /^<[^\s>\/][^>]*>\z/) {
-            my ($el_name) = $item =~ /^<([^\s>]+)/g;
-            defined $el_name or croak encode_utf8("Error: Strange tag: '$item'");
-            $item =~ s/^<\Q$el_name\E//;
-            $item =~ s/>\z//;
-            my @attrs = $item =~ /\s+(\S+=(['"]).*?\2)/g;
-            my $i = 0;
-            @attrs = grep {++$i % 2} @attrs;
-            my %attr;
-            foreach my $attr (@attrs) {
-                my ($attr_name, undef, $attr_value) = $attr =~ /^(\S+?)=(['"])(.*?)\2\z/g;
-                defined $attr_name or croak encode_utf8("Error: Strange attribute: '$attr'");
-                $attr{$attr_name} = _decode($attr_value, $entities);
-            }
-            my $entry = { el_name => $el_name, attrs => \%attr, content => [], parent => $pointer };
-            weaken $entry->{parent};
-            bless $entry, 'XML::MyXML::Object';
-            push @stack, $entry;
-            push @{$pointer->{content}}, $entry;
-            $pointer = $entry;
+            $pointer = $entry unless $is_self_closing;
         } elsif ($item =~ /^[^<>]*\z/) {
             my $entry = bless {
                 text => _decode($item, $entities),
@@ -330,6 +316,7 @@ sub _objectarray_to_xml {
     }
     return $xml;
 }
+
 
 =head2 object_to_xml($object)
 
@@ -551,7 +538,7 @@ sub simple_to_xml {
     my ($key, $value, @residue) = (ref $arref eq 'HASH') ? %$arref : @$arref;
     $key = _key_to_string($key);
     ! @residue or croak "Error: the provided simple ref contains more than 1 top element";
-    my ($el_name) = $key =~ /^(\S+)/g;
+    my ($el_name) = $key =~ /^(\S+)/;
     defined $el_name or croak encode_utf8 "Error: Strange key: $key";
 
     if (! ref $value) {
@@ -618,7 +605,7 @@ sub _arrayref_to_xml {
     foreach (my $i = 0; $i <= $#$arref; ) {
         my $key = $arref->[$i++];
         $key = _key_to_string($key);
-        my ($el_name) = $key =~ /^(\S+)/g;
+        my ($el_name) = $key =~ /^(\S+)/;
         defined $el_name or croak encode_utf8 "Error: Strange key: $key";
         my $value = $arref->[$i++];
 
@@ -638,7 +625,6 @@ sub _arrayref_to_xml {
     return $xml;
 }
 
-
 sub _hashref_to_xml {
     my $hashref = shift;
     my $flags = shift || {};
@@ -646,7 +632,7 @@ sub _hashref_to_xml {
     my $xml = '';
 
     while (my ($key, $value) = each %$hashref) {
-        my ($el_name) = $key =~ /^(\S+)/g;
+        my ($el_name) = $key =~ /^(\S+)/;
         defined $el_name or croak encode_utf8 "Error: Strange key: $key";
 
         if ($key eq '!as_is') {
@@ -715,15 +701,13 @@ sub _objectarray_to_simple_hashref {
     my $hashref = {};
 
     foreach my $stuff (@$object) {
-        if (defined $stuff->{el_name}) {
-            my $key = $stuff->{el_name};
-            $key = _strip_ns $key if $flags->{strip_ns};
+        if (defined(my $key = $stuff->{el_name})) {
+            $key = strip_ns $key if $flags->{strip_ns};
             $hashref->{ $key } = _objectarray_to_simple($stuff->{content}, $flags);
         }
-        elsif (defined $stuff->{text}) {
-            my $value = $stuff->{text};
+        elsif (defined(my $value = $stuff->{text})) {
             $value = trim $value if $flags->{strip};
-            return $value if $value =~ /\S/; # TODO: check this - is this valid?
+            return $value if $value =~ /\S/;
         }
     }
 
@@ -739,12 +723,10 @@ sub _objectarray_to_simple_arrayref {
     my $arrayref = [];
 
     foreach my $stuff (@$object) {
-        if (defined $stuff->{el_name}) {
-            my $key = $stuff->{el_name};
-            $key = _strip_ns $key if $flags->{strip_ns};
+        if (defined(my $key = $stuff->{el_name})) {
+            $key = strip_ns $key if $flags->{strip_ns};
             push @$arrayref, ( $key, _objectarray_to_simple($stuff->{content}, $flags) );
-        } elsif (defined $stuff->{text}) {
-            my $value = $stuff->{text};
+        } elsif (defined(my $value = $stuff->{text})) {
             $value = trim $value if $flags->{strip};
             return $value if $value =~ /\S/;
         }
@@ -769,6 +751,7 @@ sub check_xml {
     my $ok = eval { xml_to_object($xml, $flags); 1 };
     return !!$ok;
 }
+
 
 1; # End of XML::MyXML
 
