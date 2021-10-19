@@ -52,7 +52,8 @@
       "test" : {
          "requires" : {
             "File::Temp" : "0",
-            "Test::More" : "0.47"
+            "Test::Harness" : "3.42",
+            "Test::More" : "1.302188"
          }
       }
    },
@@ -68,7 +69,7 @@
          "web" : "https://github.com/akarelas/xml-myxml"
       }
    },
-   "version" : "1.07",
+   "version" : "1.08",
    "x_authority" : "cpan:KARJALA",
    "x_contributors" : [
       "Alexander Karelas <alex.karelas@gmail.com>",
