@@ -820,6 +820,58 @@ If you wish to describe the root element in the path as well, prepend it in the 
         print "The two are identical", "\n";
     }
 
+B<Since XML::MyXML version 1.08, the path method supports namespaces.>
+
+You can replace the namespace prefix of an attribute or an element name in the path string with the
+namespace name inside curly brackets, and place the curly-bracketed expression after the local part.
+
+B<< I<Example #1:> >> Suppose the XML you want to go through is:
+
+    <stream:stream xmlns:stream="http://foo/bar">
+        <a>b</a>
+    </stream:stream>
+
+Then this will return the string C<"b">:
+
+    $obj->path('/stream{http://foo/bar}/a')->value;
+
+B<< I<Example #2:> >> Suppose the XML you want to go through is:
+
+    <stream xmlns="http://foo/bar">
+        <a>b</a>
+    </stream>
+
+Then both of these expressions will return C<"b">:
+
+    $obj->path('/stream/a{http://foo/bar}')->value;
+    $obj->path('/stream{http://foo/bar}/a{http://foo/bar}')->value;
+
+B<Since XML::MyXML version 1.08, quotes in attribute match strings have no special meaning.>
+
+If you want to use the "]" character in attribute values, you need to escape it with a
+backslash character. As you need if you want to use the "}" character in a namespace value
+in the path string.
+
+B<< I<Example #1:> >> Suppose the XML you want to go through is:
+
+    <stream xmlns:o="http://foo}bar">
+        <a o:name="c]d">b</a>
+    </stream>
+
+Then this expression will return C<"b">:
+
+    $obj->path('/stream/a[name{http://foo\}bar}=c\]d]')->value;
+
+B<< I<Example #2:> >> You can match attribute values containing quote characters with just C<"> in the path string.
+
+If the XML is:
+
+    <stream id="&quot;1&quot;">a</stream>
+
+...then this will return the string C<"a">:
+
+    $obj->path('/stream[id="1"]')->value;
+
 Optional flags: none
 
 =head2 $obj->text([set_value]), also known as $obj->value([set_value])
