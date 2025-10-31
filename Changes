@@ -2,6 +2,9 @@ Revision history for XML-MyXML
 
 {{$NEXT}}
 
+    - important bugfix: &#<decimal number>; wouldn't decode
+    - set $VERSION in a class
+
 1.08 2021-10-19T09:50:29Z
 
     - added namespace support to the path function, breaking some back-compat
