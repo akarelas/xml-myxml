@@ -148,9 +148,10 @@ sub _decode {
         $capture
     |
         my $reference = $1;
-        my $number = $2;
-        $reference =~ /\&\#x/ ? chr(hex($number))
-            : $reference =~ /\&\#/ ? chr($number)
+        my $hex = $2;
+        my $decimal = $3;
+        $reference =~ /\&\#x/ ? chr(hex($hex))
+            : $reference =~ /\&\#/ ? chr($decimal)
             : $replace{$reference};
     |gex;
     return $string;
