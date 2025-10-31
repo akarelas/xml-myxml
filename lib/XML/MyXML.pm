@@ -16,7 +16,7 @@ our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(tidy_xml object_to_xml xml_to_object simple_to_xml xml_to_simple check_xml xml_escape);
 our %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
-our $VERSION = "1.08";
+our $VERSION = "1.09";
 
 my $DEFAULT_INDENTSTRING = ' ' x 4;
 

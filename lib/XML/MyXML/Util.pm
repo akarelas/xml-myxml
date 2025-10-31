@@ -7,7 +7,7 @@ require Exporter;
 our @ISA = ('Exporter');
 our @EXPORT_OK = qw/ trim strip_ns debug /;
 
-our $VERSION = "1.08";
+our $VERSION = "1.09";
 
 sub trim {
     my $string = shift;

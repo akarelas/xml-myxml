@@ -2,6 +2,8 @@ Revision history for XML-MyXML
 
 {{$NEXT}}
 
+1.09 2025-10-31T14:03:49Z
+
     - important bugfix: &#<decimal number>; wouldn't decode
     - set $VERSION in a class
 
