@@ -258,12 +258,12 @@ sub xml_to_object {
             defined $el_name or croak encode_utf8("Error: Strange tag: '$item'");
             $item =~ s/^\<\Q$el_name\E//;
             $item =~ s/\/>\z//;
-            my @attrs = $item =~ /\s+(\S+=(['"]).*?\2)/g;
+            my @attrs = $item =~ /\s+(\S+=(['"]).*?\2)/sg;
             my $i = 0;
             @attrs = grep {++$i % 2} @attrs;
             my %attr;
             foreach my $attr (@attrs) {
-                my ($attr_name, undef, $attr_value) = $attr =~ /^(\S+?)=(['"])(.*?)\2\z/;
+                my ($attr_name, undef, $attr_value) = $attr =~ /^(\S+?)=(['"])(.*?)\2\z/s;
                 defined $attr_name or croak encode_utf8("Error: Strange attribute: '$attr'");
                 $attr{$attr_name} = _decode($attr_value, $entities);
             }

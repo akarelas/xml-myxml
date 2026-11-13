@@ -16,4 +16,17 @@ my $foo = simple_to_xml {
 };
 is $foo, '<foo><g>123</g></foo>', '!as_is';
 
+$obj = xml_to_object(<<EOB);
+<foo x="
+    alex
+    john
+" y="mary"/>
+EOB
+is $obj->attr('x'), <<EOB, 'attributes with newline characters';
+
+    alex
+    john
+EOB
+
+
 done_testing;

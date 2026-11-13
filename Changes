@@ -2,6 +2,8 @@ Revision history for XML-MyXML
 
 {{$NEXT}}
 
+    - fix attributes with newlines were dropped
+
 1.10 2026-11-13T04:19:08Z
 
     - removed an unsafe string-eval
