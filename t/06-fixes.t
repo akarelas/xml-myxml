@@ -32,4 +32,8 @@ $obj = xml_to_object('<a v="x=" h="y"/>');
 is $obj->attr('v'), 'x=', 'v attribute';
 is $obj->attr('h'), 'y', 'h attribute';
 
+$obj = xml_to_object('<a v  =  "x=" h    =     "y"          />');
+is $obj->attr('v'), 'x=', 'v attribute, spaces between';
+is $obj->attr('h'), 'y', 'h attribute, spaces between';
+
 done_testing;

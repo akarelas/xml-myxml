@@ -4,6 +4,7 @@ Revision history for XML-MyXML
 
     - fix attributes with newlines were dropped
     - fix attributes on: <a v="x=" h="y"/>
+    - fix spaces were not allowed between attribute name and its value
 
 1.10 2026-11-13T04:19:08Z
 
