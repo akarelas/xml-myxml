@@ -258,7 +258,7 @@ sub xml_to_object {
             defined $el_name or croak encode_utf8("Error: Strange tag: '$item'");
             $item =~ s/^\<\Q$el_name\E//;
             $item =~ s/\/>\z//;
-            my @attrs = $item =~ /\s+(\S+=(['"]).*?\2)/sg;
+            my @attrs = $item =~ /\s+([^\s=]+=(['"]).*?\2)/sg;
             my $i = 0;
             @attrs = grep {++$i % 2} @attrs;
             my %attr;

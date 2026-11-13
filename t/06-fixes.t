@@ -28,5 +28,8 @@ is $obj->attr('x'), <<EOB, 'attributes with newline characters';
     john
 EOB
 
+$obj = xml_to_object('<a v="x=" h="y"/>');
+is $obj->attr('v'), 'x=', 'v attribute';
+is $obj->attr('h'), 'y', 'h attribute';
 
 done_testing;
