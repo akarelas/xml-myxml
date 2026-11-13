@@ -69,7 +69,7 @@
          "web" : "https://github.com/akarelas/xml-myxml"
       }
    },
-   "version" : "1.10",
+   "version" : "1.11",
    "x_authority" : "cpan:KARJALA",
    "x_contributors" : [
       "Alex <alex@localhost>",
