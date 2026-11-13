@@ -4,13 +4,13 @@
       "Alexander Karelas <karjala@cpan.org>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Minilla/v3.1.26, CPAN::Meta::Converter version 2.150010",
+   "generated_by" : "Minilla/v3.3.2",
    "license" : [
       "perl_5"
    ],
    "meta-spec" : {
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
-      "version" : 2
+      "version" : "2"
    },
    "name" : "XML-MyXML",
    "no_index" : {
@@ -69,9 +69,10 @@
          "web" : "https://github.com/akarelas/xml-myxml"
       }
    },
-   "version" : "1.09",
+   "version" : "1.10",
    "x_authority" : "cpan:KARJALA",
    "x_contributors" : [
+      "Alex <alex@localhost>",
       "Alexander Karelas <alex.karelas@gmail.com>",
       "Alexander Karelas <no-reply@karjala.org>",
       "Gabor Szabo <gabor@szabgab.com>"
