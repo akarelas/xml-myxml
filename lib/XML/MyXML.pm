@@ -114,6 +114,7 @@ sub _encode {
     return $string;
 }
 
+sub check_xml;
 
 =head2 xml_escape($string)
 

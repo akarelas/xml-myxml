@@ -2,8 +2,9 @@ Revision history for XML-MyXML
 
 {{$NEXT}}
 
-    - fixed bug where <something>0</something> object's ->text would return an empty string
     - removed an unsafe string-eval
+    - fixed bug where <something>0</something> object's ->text would return an empty string
+    - fixed bug where '!as_is' in simple_to_xml would always fail
 
 1.09 2025-10-31T14:03:49Z
 
