@@ -3,6 +3,7 @@ Revision history for XML-MyXML
 {{$NEXT}}
 
     - fixed bug where <something>0</something> object's ->text would return an empty string
+    - removed an unsafe string-eval
 
 1.09 2025-10-31T14:03:49Z
 

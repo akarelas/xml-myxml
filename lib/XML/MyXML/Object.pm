@@ -21,13 +21,9 @@ sub new {
 my $ch0 = chr(0);
 sub _string_unescape {
     my $string = shift;
-
     defined $string or return undef;
-
-    my $ret = eval "qq${ch0}$string${ch0}";
-    defined $ret or croak "Can't unescape this string: $string";
-
-    return $ret;
+    $string =~ s/\\(.)/$1/gs;
+    return $string;
 }
 
 sub _parse_description {
