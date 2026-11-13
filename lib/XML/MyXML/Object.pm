@@ -234,7 +234,7 @@ sub text {
         if ($self->{content}) {
             $value .= $_->text($flags) foreach @{ $self->{content} };
         }
-        if ($self->{text}) {
+        if (defined $self->{text} and length $self->{text}) {
             my $temp_value = $self->{text};
             $temp_value = trim $temp_value if $flags->{strip};
             $value .= $temp_value;
